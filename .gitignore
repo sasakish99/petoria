@@ -1,0 +1,22 @@
+# IDE specific files
+.idea/
+!.idea/vcs.xml
+!.idea/runConfigurations/
+!.idea/modules.xml
+!.idea/php.xml
+!.idea/laravel-idea.xml
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/usage.statistics.xml
+.idea/dictionaries
+.idea/shelf
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Project specific
+backend/.env
+frontend/.env.local
+node_modules/
+vendor/
