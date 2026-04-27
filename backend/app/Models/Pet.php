@@ -1,0 +1,41 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Pet extends Model
+{
+    protected $fillable = [
+        'user_id',
+        'name',
+        'species',
+        'birthday',
+        'target_weight',
+    ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function weightLogs()
+    {
+        return $this->hasMany(WeightLog::class);
+    }
+
+    public function healthLogs()
+    {
+        return $this->hasMany(HealthLog::class);
+    }
+
+    public function medicalEvents()
+    {
+        return $this->hasMany(MedicalEvent::class);
+    }
+
+    public function aiDiagnoses()
+    {
+        return $this->hasMany(AiDiagnosis::class);
+    }
+}

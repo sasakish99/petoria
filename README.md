@@ -1,0 +1,49 @@
+# Petoria (ペトリア)
+
+大切なペットの健康と成長を家族みんなで見守る、ペット健康管理アプリケーションです。
+
+「Petoria」という名前には、「Pet（ペット）」＋「historia（歴史・記録）」という意味が込められています。大切な家族であるペットの一生を記録し、共に歩む歴史を大切にしたいという想いから生まれました。
+
+## 機能概要
+- **ユーザー認証**: Laravel Breeze (API) による会員登録、ログイン機能。
+- **ダッシュボード**: ペットごとの体重推移グラフ、ワクチン接種リマインダーを表示。
+- **ペット管理**: 複数のペットのプロフィールを登録・管理。
+- **健康記録**: 体重の記録管理（グラフ化対応）。
+- **医療イベント管理**: ワクチンや予防薬の予定管理。
+- **AI健康診断 (実装予定)**: 気になる箇所の写真を撮影し、AI（OpenAI GPT-4o）によるアドバイスを受信。
+
+## 技術スタック
+- **フロントエンド**: Next.js 15 (TypeScript), Tailwind CSS, Recharts, SWR
+- **バックエンド**: Laravel 11 (PHP 8.4)
+- **データベース**: MySQL 8.0
+- **AI**: OpenAI API (GPT-4o)
+- **インフラ**: Docker / Docker Compose
+
+## 開発環境の構築
+
+### 前提条件
+- Docker / Docker Compose
+
+### 手順
+1. リポジトリをクローン
+2. コンテナのビルドと起動
+   ```bash
+   docker compose up -d --build
+   ```
+3. バックエンドの初期設定
+   ```bash
+   docker compose exec backend composer install
+   docker compose exec backend php artisan key:generate
+   docker compose exec backend php artisan migrate
+   ```
+4. フロントエンドの初期設定
+   ```bash
+   docker compose exec frontend npm install
+   ```
+
+### アクセス
+- **Frontend**: [http://localhost:3000](http://localhost:3000)
+- **Backend (API)**: [http://localhost:8000](http://localhost:8000)
+
+## 設計書
+詳細な設計については [design_document.md](./design_document.md) を参照してください。
