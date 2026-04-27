@@ -18,6 +18,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::get('/breeds', BreedController::class);
     Route::apiResource('pets', PetController::class);
+    Route::post('pets/{pet}/ai-diagnose', [PetController::class, 'aiDiagnose']);
     Route::post('pets/{pet}/weight-logs', [WeightLogController::class, 'store']);
     Route::post('pets/{pet}/medical-events', [MedicalEventController::class, 'store']);
 });
