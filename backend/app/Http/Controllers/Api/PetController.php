@@ -175,4 +175,29 @@ class PetController extends Controller
             ], 500);
         }
     }
+
+    public function destroyAiDiagnoses(Request $request, Pet $pet)
+    {
+        if ($pet->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:ai_diagnoses,id',
+        ]);
+
+        $ids = $request->input('ids');
+
+        $diagnoses = $pet->aiDiagnoses()->whereIn('id', $ids)->get();
+
+        foreach ($diagnoses as $diagnosis) {
+            if ($diagnosis->image_path) {
+                Storage::disk('public')->delete($diagnosis->image_path);
+            }
+            $diagnosis->delete();
+        }
+
+        return response()->noContent();
+    }
 }

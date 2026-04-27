@@ -1,0 +1,227 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/auth';
+import axios from '@/lib/axios';
+import { useRouter, useParams } from 'next/navigation';
+import { Camera, Upload, ChevronLeft, Loader2, AlertCircle } from 'lucide-react';
+import Link from 'next/link';
+
+const AiDiagnose = () => {
+    const params = useParams();
+    const router = useRouter();
+    const { user } = useAuth({ middleware: 'auth' });
+    const petId = params.id;
+    
+    const [pet, setPet] = useState<any>(null);
+    const [image, setImage] = useState<File | null>(null);
+    const [preview, setPreview] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [result, setResult] = useState<any>(null);
+    const [error, setError] = useState<string | null>(null);
+    const [isDragging, setIsDragging] = useState(false);
+
+    useEffect(() => {
+        if (petId) {
+            axios.get(`/api/pets/${petId}`)
+                .then(res => setPet(res.data))
+                .catch(err => console.error(err));
+        }
+    }, [petId]);
+
+    if (!user || !pet) {
+        return <div className="min-h-screen flex items-center justify-center">読み込み中...</div>;
+    }
+
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setImage(file);
+            setPreview(URL.createObjectURL(file));
+            setResult(null);
+            setError(null);
+        }
+    };
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragging(true);
+    };
+
+    const handleDragLeave = () => {
+        setIsDragging(false);
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragging(false);
+        const file = e.dataTransfer.files?.[0];
+        if (file && file.type.startsWith('image/')) {
+            setImage(file);
+            setPreview(URL.createObjectURL(file));
+            setResult(null);
+            setError(null);
+        }
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!image) return;
+
+        setLoading(true);
+        setError(null);
+        
+        const formData = new FormData();
+        formData.append('image', image);
+
+        try {
+            const response = await axios.post(`/api/pets/${petId}/ai-diagnose`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            setResult(response.data);
+        } catch (err: any) {
+            console.error(err);
+            setError(err.response?.data?.message || '解析中にエラーが発生しました。OpenAI APIキーが正しく設定されているか確認してください。');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="min-h-screen bg-gray-50 pb-12">
+            <nav className="bg-white border-b border-gray-200 sticky top-0 z-10">
+                <div className="max-w-3xl mx-auto px-4 h-16 flex items-center">
+                    <button onClick={() => router.back()} className="mr-4 p-2 hover:bg-gray-100 rounded-full">
+                        <ChevronLeft className="h-6 w-6 text-gray-600" />
+                    </button>
+                    <h1 className="text-xl font-bold text-gray-900">{pet.name} のAI健康診断</h1>
+                    <div className="ml-auto">
+                        <Link 
+                            href={`/pets/${petId}/ai-diagnose/history`}
+                            className="text-sm font-medium text-indigo-600 hover:text-indigo-800"
+                        >
+                            履歴を見る
+                        </Link>
+                    </div>
+                </div>
+            </nav>
+
+            <main className="max-w-3xl mx-auto px-4 py-8">
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    {!result ? (
+                        <div className="p-6 md:p-8">
+                            <div className="mb-8 text-center">
+                                <p className="text-gray-600">
+                                    ペットの気になる箇所（皮膚、目、口など）の写真をアップロードしてください。<br />
+                                    AIが健康状態に関するアドバイスを生成します。
+                                </p>
+                            </div>
+
+                            <form onSubmit={handleSubmit} className="space-y-6">
+                                <div 
+                                    className="relative"
+                                    onDragOver={handleDragOver}
+                                    onDragLeave={handleDragLeave}
+                                    onDrop={handleDrop}
+                                >
+                                    {preview ? (
+                                        <div className="relative aspect-square w-full max-w-sm mx-auto rounded-2xl overflow-hidden border-2 border-dashed border-gray-200">
+                                            <img src={preview} alt="Preview" className="w-full h-full object-cover" />
+                                            <button 
+                                                type="button"
+                                                onClick={() => { setImage(null); setPreview(null); }}
+                                                className="absolute top-2 right-2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70"
+                                            >
+                                                <PlusCircle className="h-5 w-5 rotate-45" />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <label className={`flex flex-col items-center justify-center aspect-square w-full max-w-sm mx-auto rounded-2xl border-2 border-dashed cursor-pointer transition-all duration-200 ${
+                                            isDragging 
+                                                ? 'border-indigo-500 bg-indigo-50 scale-[1.02]' 
+                                                : 'border-gray-300 bg-gray-50 hover:bg-gray-100'
+                                        }`}>
+                                            <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                                <Camera className={`h-12 w-12 mb-3 transition-colors ${isDragging ? 'text-indigo-500' : 'text-gray-400'}`} />
+                                                <p className={`mb-2 text-sm font-semibold transition-colors ${isDragging ? 'text-indigo-600' : 'text-gray-500'}`}>
+                                                    {isDragging ? 'ここにドロップしてアップロード' : 'タップして写真を撮影・選択'}
+                                                </p>
+                                                <p className="text-xs text-gray-400">または画像をドラッグ＆ドロップ</p>
+                                            </div>
+                                            <input type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
+                                        </label>
+                                    )}
+                                </div>
+
+                                {error && (
+                                    <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl flex items-start">
+                                        <AlertCircle className="h-5 w-5 mr-3 mt-0.5 flex-shrink-0" />
+                                        <p className="text-sm">{error}</p>
+                                    </div>
+                                )}
+
+                                <button
+                                    type="submit"
+                                    disabled={!image || loading}
+                                    className="w-full py-4 bg-indigo-600 text-white rounded-xl font-bold text-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center shadow-lg shadow-indigo-100"
+                                >
+                                    {loading ? (
+                                        <>
+                                            <Loader2 className="h-5 w-5 mr-3 animate-spin" />
+                                            AIが解析中...
+                                        </>
+                                    ) : (
+                                        'AI健康診断を開始する'
+                                    )}
+                                </button>
+                            </form>
+                        </div>
+                    ) : (
+                        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <div className="aspect-video w-full bg-gray-100">
+                                <img src={`http://localhost:8000/storage/${result.image_path}`} alt="Diagnosed" className="w-full h-full object-contain" />
+                            </div>
+                            <div className="p-6 md:p-8">
+                                <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                                    <Activity className="h-6 w-6 mr-2 text-green-500" />
+                                    AI解析結果
+                                </h3>
+                                <div className="prose prose-indigo max-w-none text-gray-700 bg-gray-50 p-6 rounded-2xl whitespace-pre-wrap leading-relaxed">
+                                    {result.result_text}
+                                </div>
+                                <div className="mt-8 flex flex-col sm:flex-row gap-4">
+                                    <button 
+                                        onClick={() => setResult(null)}
+                                        className="flex-1 py-3 px-6 border border-gray-300 rounded-xl font-medium hover:bg-gray-50 transition-colors"
+                                    >
+                                        別の写真を診断する
+                                    </button>
+                                    <button 
+                                        onClick={() => router.push('/dashboard')}
+                                        className="flex-1 py-3 px-6 bg-gray-900 text-white rounded-xl font-medium hover:bg-gray-800 transition-colors"
+                                    >
+                                        ダッシュボードに戻る
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </main>
+        </div>
+    );
+};
+
+const PlusCircle = ({ className }: { className?: string }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+    </svg>
+);
+
+const Activity = ({ className }: { className?: string }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+    </svg>
+);
+
+export default AiDiagnose;
