@@ -8,6 +8,13 @@ use App\Models\Pet;
 
 class PetController extends Controller
 {
+    /*
+    public function __construct()
+    {
+        $this->authorizeResource(Pet::class, 'pet');
+    }
+    */
+
     public function index(Request $request)
     {
         return $request->user()->pets;
@@ -18,6 +25,7 @@ class PetController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'species' => 'required|string|max:255',
+            'breed_id' => 'nullable|exists:breeds,id',
             'birthday' => 'nullable|date',
             'target_weight' => 'nullable|numeric|min:0',
         ]);
@@ -40,6 +48,7 @@ class PetController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'species' => 'required|string|max:255',
+            'breed_id' => 'nullable|exists:breeds,id',
             'birthday' => 'nullable|date',
             'target_weight' => 'nullable|numeric|min:0',
         ]);

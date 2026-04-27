@@ -10,13 +10,24 @@ class Pet extends Model
         'user_id',
         'name',
         'species',
+        'breed_id',
         'birthday',
         'target_weight',
+    ];
+
+    protected $casts = [
+        'birthday' => 'date',
+        'target_weight' => 'decimal:2',
     ];
 
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function breed()
+    {
+        return $this->belongsTo(Breed::class);
     }
 
     public function weightLogs()
