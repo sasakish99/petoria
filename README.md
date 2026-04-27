@@ -45,5 +45,14 @@
 - **Frontend**: [http://localhost:3000](http://localhost:3000)
 - **Backend (API)**: [http://localhost:8000](http://localhost:8000)
 
+## 認証について (GitHubへのPush)
+GitHubでは2021年8月より、パスワードによる認証が廃止されました。
+`git push` 等でパスワードを求められた際は、GitHubの **Personal Access Token (PAT)** を作成し、パスワードの代わりに入力してください。
+
+### トークンの作成手順
+1. GitHubの [Settings] > [Developer settings] > [Personal access tokens] > [Tokens (classic)] を開く。
+2. [Generate new token] をクリック。
+3. `repo` スコープにチェックを入れてトークンを生成し、必ず控えておく。
+
 ## 設計書
 詳細な設計については [design_document.md](./design_document.md) を参照してください。
