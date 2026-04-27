@@ -97,7 +97,7 @@ const AiDiagnose = () => {
                     <h1 className="text-xl font-bold text-gray-900">{pet.name} のAI健康診断</h1>
                     <div className="ml-auto">
                         <Link 
-                            href={`/pets/${petId}/ai-diagnose/history`}
+                            href={`/pets/${petId}/history`}
                             className="text-sm font-medium text-indigo-600 hover:text-indigo-800"
                         >
                             履歴を見る

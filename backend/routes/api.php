@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\PetController;
+use App\Http\Controllers\Api\HealthLogController;
 use App\Http\Controllers\Api\WeightLogController;
 use App\Http\Controllers\Api\MedicalEventController;
 use App\Http\Controllers\Api\BreedController;
@@ -20,6 +21,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::apiResource('pets', PetController::class);
     Route::post('pets/{pet}/ai-diagnose', [PetController::class, 'aiDiagnose']);
     Route::delete('pets/{pet}/ai-diagnoses', [PetController::class, 'destroyAiDiagnoses']);
+    Route::get('pets/{pet}/health-logs', [HealthLogController::class, 'index']);
+    Route::post('pets/{pet}/health-logs', [HealthLogController::class, 'store']);
+    Route::put('pets/{pet}/health-logs/{healthLog}', [HealthLogController::class, 'update']);
+    Route::delete('pets/{pet}/health-logs/{healthLog}', [HealthLogController::class, 'destroy']);
     Route::post('pets/{pet}/weight-logs', [WeightLogController::class, 'store']);
     Route::post('pets/{pet}/medical-events', [MedicalEventController::class, 'store']);
 });

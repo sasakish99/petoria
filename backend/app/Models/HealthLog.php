@@ -10,6 +10,9 @@ class HealthLog extends Model
         'pet_id',
         'meal_amount',
         'stool_status',
+        'urine_status',
+        'exercise_duration',
+        'weight',
         'memo',
         'logged_at',
     ];
