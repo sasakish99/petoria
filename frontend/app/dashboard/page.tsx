@@ -451,11 +451,19 @@ const Dashboard = () => {
                                                 <Activity className="h-3.5 w-3.5 mr-1.5 text-emerald-500" />
                                                 1週間の散歩 (分)
                                             </h3>
-                                            <div className="text-right">
-                                                <span className="text-base font-black text-gray-900">
-                                                    {getWeeklyExerciseData(activePet.health_logs).reduce((acc, curr) => acc + (curr.exercise_duration || 0), 0)}
-                                                </span>
-                                                <span className="text-[9px] font-bold text-gray-400 ml-0.5">分</span>
+                                            <div className="text-right flex items-baseline space-x-3">
+                                                <div>
+                                                    <span className="text-base font-black text-gray-900">
+                                                        {getWeeklyExerciseData(activePet.health_logs).reduce((acc, curr) => acc + (curr.exercise_duration || 0), 0)}
+                                                    </span>
+                                                    <span className="text-[9px] font-bold text-gray-400 ml-0.5">分/週</span>
+                                                </div>
+                                                <div className="border-l border-gray-200 pl-3">
+                                                    <span className="text-base font-black text-gray-900">
+                                                        {Math.round(getWeeklyExerciseData(activePet.health_logs).reduce((acc, curr) => acc + (curr.exercise_duration || 0), 0) / 7)}
+                                                    </span>
+                                                    <span className="text-[9px] font-bold text-gray-400 ml-0.5">分/日</span>
+                                                </div>
                                             </div>
                                         </div>
                                         <div className="h-44 w-full">
