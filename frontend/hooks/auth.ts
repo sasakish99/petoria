@@ -50,12 +50,12 @@ export const useAuth = ({ middleware, redirectIfAuthenticated }: { middleware?: 
         if (!error) {
             await axios.post('/logout').then(() => mutate());
         }
-        window.location.pathname = '/login';
+        router.push('/login');
     };
 
     useEffect(() => {
         if (middleware === 'guest' && redirectIfAuthenticated && user) router.push(redirectIfAuthenticated);
-        if (middleware === 'auth' && error) logout();
+        if (window.location.pathname !== '/login' && middleware === 'auth' && error) logout();
     }, [user, error]);
 
     return {

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useAuth } from '@/hooks/auth';
 
 const Header = () => {
-    const { user, logout } = useAuth({ middleware: 'auth' });
+    const { user, logout } = useAuth();
 
     if (!user) return null;
 
