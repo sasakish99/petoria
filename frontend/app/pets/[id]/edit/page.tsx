@@ -22,6 +22,7 @@ const PetEditContent = ({ params }: { params: any }) => {
     const [species, setSpecies] = useState('dog');
     const [breedId, setBreedId] = useState('');
     const [birthday, setBirthday] = useState('');
+    const [lastVaccinationDate, setLastVaccinationDate] = useState('');
     const [targetWeight, setTargetWeight] = useState('');
     const [themeColor, setThemeColor] = useState('indigo');
     const [image, setImage] = useState<File | null>(null);
@@ -47,6 +48,7 @@ const PetEditContent = ({ params }: { params: any }) => {
             setSpecies(pet.species);
             setBreedId(pet.breed_id?.toString() || '');
             setBirthday(pet.birthday ? pet.birthday.split('T')[0] : '');
+            setLastVaccinationDate(pet.last_vaccination_date ? pet.last_vaccination_date.split('T')[0] : '');
             setTargetWeight(pet.target_weight?.toString() || '');
             setThemeColor(pet.theme_color || 'indigo');
             if (pet.image_path) {
@@ -101,6 +103,7 @@ const PetEditContent = ({ params }: { params: any }) => {
         formData.append('species', species);
         if (breedId) formData.append('breed_id', breedId);
         if (birthday) formData.append('birthday', birthday);
+        if (lastVaccinationDate) formData.append('last_vaccination_date', lastVaccinationDate);
         if (targetWeight) formData.append('target_weight', targetWeight);
         formData.append('theme_color', themeColor);
         if (image) formData.append('image', image);
@@ -241,6 +244,17 @@ const PetEditContent = ({ params }: { params: any }) => {
                             className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                         />
                         {errors.birthday && <p className="mt-1 text-sm text-red-600">{errors.birthday[0]}</p>}
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-bold text-gray-700 mb-2">前回の混合ワクチン接種日 (任意)</label>
+                        <input
+                            type="date"
+                            value={lastVaccinationDate}
+                            onChange={(e) => setLastVaccinationDate(e.target.value)}
+                            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                        />
+                        {errors.last_vaccination_date && <p className="mt-1 text-sm text-red-600">{errors.last_vaccination_date[0]}</p>}
                     </div>
 
                     <div>

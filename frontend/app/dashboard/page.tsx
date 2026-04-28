@@ -20,13 +20,28 @@ import { Calendar, Bell, PlusCircle, Activity, ClipboardList, HeartPulse, Utensi
 import { format, differenceInYears, differenceInMonths, subDays, isSameDay } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import HealthLogModal from '@/components/HealthLogModal';
 
 const Dashboard = () => {
     const { user, logout } = useAuth({ middleware: 'auth' });
     const [selectedPetForLog, setSelectedPetForLog] = useState<any>(null);
     const [activePetId, setActivePetId] = useState<number | null>(null);
+
+    // マウント時にlocalStorageから最後に選択したペットIDを復元
+    useEffect(() => {
+        const savedPetId = localStorage.getItem('lastActivePetId');
+        if (savedPetId) {
+            setActivePetId(parseInt(savedPetId, 10));
+        }
+    }, []);
+
+    // activePetIdが変わるたびにlocalStorageに保存
+    useEffect(() => {
+        if (activePetId) {
+            localStorage.setItem('lastActivePetId', activePetId.toString());
+        }
+    }, [activePetId]);
 
     const calculateAge = (birthday: string) => {
         if (!birthday) return '';
@@ -65,7 +80,11 @@ const Dashboard = () => {
         axios.get('/api/dashboard').then(res => res.data),
         {
             onSuccess: (data) => {
-                if (!activePetId && data.pets && data.pets.length > 0) {
+                // localStorageに保存されているIDが取得したペットリストに含まれているか確認
+                const savedPetId = localStorage.getItem('lastActivePetId');
+                const isValidId = savedPetId && data.pets.some((p: any) => p.id === parseInt(savedPetId, 10));
+
+                if (!isValidId && data.pets && data.pets.length > 0) {
                     setActivePetId(data.pets[0].id);
                 }
             }
@@ -234,7 +253,7 @@ const Dashboard = () => {
                         ) : (
                             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
                                 <div className="flex items-center justify-between">
-                                    <div>
+                                    <div className="flex items-baseline gap-2">
                                         <h2 className="text-xl font-extrabold text-gray-900 leading-tight">{activePet.name}</h2>
                                         <p className="text-xs text-gray-500">
                                             {activePet.breed?.name ?? ''}
@@ -381,16 +400,27 @@ const Dashboard = () => {
                                             重要なお知らせ
                                         </h3>
                                         <div className="space-y-2 flex-1">
-                                            {activePet.medical_events.length > 0 ? (
-                                                activePet.medical_events.map((event: any) => (
-                                                    <div key={event.id} className="flex items-start p-2 bg-amber-50 rounded-lg border border-amber-100">
-                                                        <Calendar className="h-3 w-3 text-amber-600 mr-2 mt-0.5" />
-                                                        <div>
-                                                            <p className="text-[11px] font-bold text-amber-900 leading-tight">{event.title}</p>
-                                                            <p className="text-[9px] text-amber-700 font-medium">予定日: {format(new Date(event.event_date), 'yyyy/MM/dd')}</p>
+                                            {(activePet.medical_events.length > 0 || (activePet.generated_announcements && activePet.generated_announcements.length > 0)) ? (
+                                                <>
+                                                    {activePet.medical_events.map((event: any) => (
+                                                        <div key={event.id} className="flex items-start p-2 bg-amber-50 rounded-lg border border-amber-100">
+                                                            <Calendar className="h-3 w-3 text-amber-600 mr-2 mt-0.5" />
+                                                            <div>
+                                                                <p className="text-[11px] font-bold text-amber-900 leading-tight">{event.title}</p>
+                                                                <p className="text-[9px] text-amber-700 font-medium">予定日: {format(new Date(event.event_date), 'yyyy/MM/dd')}</p>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                ))
+                                                    ))}
+                                                    {activePet.generated_announcements && activePet.generated_announcements.map((announcement: any) => (
+                                                        <div key={announcement.id} className="flex items-start p-2 bg-blue-50 rounded-lg border border-blue-100">
+                                                            <Bell className="h-3 w-3 text-blue-600 mr-2 mt-0.5" />
+                                                            <div>
+                                                                <p className="text-[11px] font-bold text-blue-900 leading-tight">{announcement.title}</p>
+                                                                <p className="text-[9px] text-blue-700 font-medium">推奨時期: {format(new Date(announcement.event_date), 'yyyy/MM/dd')}</p>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </>
                                             ) : (
                                                 <p className="text-[10px] text-gray-400 text-center py-2 italic">予定はありません</p>
                                             )}
