@@ -112,35 +112,8 @@ const Dashboard = () => {
     const theme = getThemeColors(activePet?.theme_color || 'indigo');
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col">
-            <nav className="bg-white border-b border-gray-200 sticky top-0 z-20">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between h-16">
-                        <div className="flex items-center">
-                            <Link href="/dashboard" className="flex items-center">
-                                <img src="/logo.png" alt="Petoria Logo" className="h-10 w-auto mr-2" />
-                                <span className="text-xl font-bold text-gray-900">Petoria</span>
-                            </Link>
-                        </div>
-                        <div className="flex items-center space-x-4">
-                            <Link 
-                                href="/profile"
-                                className="text-sm font-medium text-gray-600 hover:text-indigo-600 transition-colors"
-                            >
-                                {user.name} さん
-                            </Link>
-                            <button
-                                onClick={logout}
-                                className="text-sm font-medium text-gray-600 hover:text-indigo-600 transition-colors"
-                            >
-                                ログアウト
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </nav>
-
-            <div className="flex-1 flex overflow-hidden">
+        <div className="min-h-screen bg-gray-50 flex flex-col h-screen overflow-hidden">
+            <div className="flex-1 flex overflow-hidden pt-4">
                 {/* サイドバー - ペットセレクター */}
                 {hasPets && (
                     <aside className="w-20 md:w-64 bg-white border-r border-gray-200 overflow-y-auto hidden sm:block">
@@ -194,8 +167,8 @@ const Dashboard = () => {
                     </aside>
                 )}
 
-                <main className="flex-1 overflow-y-auto py-2">
-                    <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6">
+                <main className="flex-1 overflow-y-auto pt-6 pb-2">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         {/* モバイル用ペットセレクター */}
                         {hasPets && (
                             <div className="flex sm:hidden overflow-x-auto pb-2 space-x-3 scrollbar-hide">
