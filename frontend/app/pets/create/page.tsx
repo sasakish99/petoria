@@ -5,7 +5,12 @@ import { useAuth } from '@/hooks/auth';
 import axios from '@/lib/axios';
 import { useRouter } from 'next/navigation';
 import useSWR from 'swr';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, Camera, X } from 'lucide-react';
+import dynamic from 'next/dynamic';
+
+const ImageCropModal = dynamic(() => import('@/components/ImageCropModal'), {
+    ssr: false,
+});
 
 const PetCreate = () => {
     const router = useRouter();
@@ -17,6 +22,10 @@ const PetCreate = () => {
     const [birthday, setBirthday] = useState('');
     const [targetWeight, setTargetWeight] = useState('');
     const [themeColor, setThemeColor] = useState('indigo');
+    const [image, setImage] = useState<File | null>(null);
+    const [preview, setPreview] = useState<string | null>(null);
+    const [tempImage, setTempImage] = useState<string | null>(null);
+    const [showCropModal, setShowCropModal] = useState(false);
     const [errors, setErrors] = useState<any>({});
     const [loading, setLoading] = useState(false);
 
@@ -40,29 +49,45 @@ const PetCreate = () => {
 
     if (!user) return null;
 
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setTempImage(URL.createObjectURL(file));
+            setShowCropModal(true);
+        }
+    };
+
+    const onCropComplete = (croppedBlob: Blob) => {
+        const file = new File([croppedBlob], 'pet_avatar.jpg', { type: 'image/jpeg' });
+        setImage(file);
+        setPreview(URL.createObjectURL(croppedBlob));
+    };
+
+    const removeImage = () => {
+        setImage(null);
+        setPreview(null);
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         setErrors({});
 
+        const formData = new FormData();
+        formData.append('name', name);
+        formData.append('species', species);
+        if (breedId) formData.append('breed_id', breedId);
+        if (birthday) formData.append('birthday', birthday);
+        if (targetWeight) formData.append('target_weight', targetWeight);
+        formData.append('theme_color', themeColor);
+        if (image) formData.append('image', image);
+
         try {
-            console.log('Submitting pet data:', {
-                name,
-                species,
-                breed_id: breedId || null,
-                birthday: birthday || null,
-                target_weight: targetWeight || null,
-                theme_color: themeColor,
+            await axios.post('/api/pets', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
             });
-            const response = await axios.post('/api/pets', {
-                name,
-                species,
-                breed_id: breedId || null,
-                birthday: birthday || null,
-                target_weight: targetWeight || null,
-                theme_color: themeColor,
-            });
-            console.log('Response:', response.data);
             router.push('/dashboard');
         } catch (error: any) {
             console.error('Submit error:', error);
@@ -76,6 +101,13 @@ const PetCreate = () => {
 
     return (
         <div className="min-h-screen bg-gray-50 py-12">
+            {showCropModal && tempImage && (
+                <ImageCropModal
+                    image={tempImage}
+                    onCropComplete={onCropComplete}
+                    onClose={() => setShowCropModal(false)}
+                />
+            )}
             <div className="max-w-md mx-auto bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
                 <div className="p-8 border-b border-gray-50 flex items-center">
                     <button onClick={() => router.back()} className="p-2 mr-4 hover:bg-gray-100 rounded-full transition-colors">
@@ -85,6 +117,37 @@ const PetCreate = () => {
                 </div>
                 
                 <form onSubmit={handleSubmit} className="p-8 space-y-6">
+                    <div className="flex flex-col items-center mb-6">
+                        <label className="block text-sm font-bold text-gray-700 mb-4 w-full">顔写真</label>
+                        <div className="relative group">
+                            <div className={`w-32 h-32 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden bg-gray-50 transition-all ${!preview && 'hover:border-indigo-400 hover:bg-indigo-50'}`}>
+                                {preview ? (
+                                    <img src={preview} alt="Preview" className="w-full h-full object-cover" />
+                                ) : (
+                                    <Camera className="h-8 w-8 text-gray-400 group-hover:text-indigo-500 transition-colors" />
+                                )}
+                            </div>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleImageChange}
+                                className="absolute inset-0 opacity-0 cursor-pointer"
+                                title="写真をアップロード"
+                            />
+                            {preview && (
+                                <button
+                                    type="button"
+                                    onClick={removeImage}
+                                    className="absolute -top-1 -right-1 bg-red-500 text-white p-1.5 rounded-full shadow-md hover:bg-red-600 transition-colors"
+                                >
+                                    <X className="h-4 w-4" />
+                                </button>
+                            )}
+                        </div>
+                        <p className="mt-2 text-xs text-gray-400">クリックして写真をアップロード</p>
+                        {errors.image && <p className="mt-1 text-sm text-red-600">{errors.image[0]}</p>}
+                    </div>
+
                     <div>
                         <label className="block text-sm font-bold text-gray-700 mb-2">お名前</label>
                         <input

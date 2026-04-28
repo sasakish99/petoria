@@ -1,14 +1,20 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use, Suspense } from 'react';
 import { useAuth } from '@/hooks/auth';
 import axios from '@/lib/axios';
 import { useRouter } from 'next/navigation';
 import useSWR from 'swr';
-import { ChevronLeft, Trash2 } from 'lucide-react';
+import { ChevronLeft, Trash2, Camera, X } from 'lucide-react';
+import dynamic from 'next/dynamic';
 
-const PetEdit = ({ params }: { params: Promise<{ id: string }> }) => {
-    const { id: petId } = use(params);
+const ImageCropModal = dynamic(() => import('@/components/ImageCropModal'), {
+    ssr: false,
+});
+
+const PetEditContent = ({ params }: { params: any }) => {
+    const resolvedParams: any = use(params);
+    const petId = resolvedParams.id;
     const router = useRouter();
     const { user } = useAuth({ middleware: 'auth' });
     
@@ -18,16 +24,22 @@ const PetEdit = ({ params }: { params: Promise<{ id: string }> }) => {
     const [birthday, setBirthday] = useState('');
     const [targetWeight, setTargetWeight] = useState('');
     const [themeColor, setThemeColor] = useState('indigo');
+    const [image, setImage] = useState<File | null>(null);
+    const [preview, setPreview] = useState<string | null>(null);
+    const [tempImage, setTempImage] = useState<string | null>(null);
+    const [showCropModal, setShowCropModal] = useState(false);
     const [errors, setErrors] = useState<any>({});
     const [loading, setLoading] = useState(false);
 
-    const { data: pet } = useSWR(petId ? `/api/pets/${petId}` : null, () =>
-        axios.get(`/api/pets/${petId}`).then(res => res.data)
-    );
+    const { data: pet } = useSWR(petId ? `/api/pets/${petId}` : null, async () => {
+        const res = await axios.get(`/api/pets/${petId}`);
+        return res.data;
+    });
 
-    const { data: breeds } = useSWR('/api/breeds', () =>
-        axios.get('/api/breeds').then(res => res.data)
-    );
+    const { data: breeds } = useSWR('/api/breeds', async () => {
+        const res = await axios.get('/api/breeds');
+        return res.data;
+    });
 
     useEffect(() => {
         if (pet) {
@@ -37,6 +49,12 @@ const PetEdit = ({ params }: { params: Promise<{ id: string }> }) => {
             setBirthday(pet.birthday || '');
             setTargetWeight(pet.target_weight?.toString() || '');
             setThemeColor(pet.theme_color || 'indigo');
+            if (pet.image_path) {
+                const imageUrl = pet.image_path.startsWith('http') 
+                    ? pet.image_path 
+                    : `${process.env.NEXT_PUBLIC_BACKEND_URL}/storage/${pet.image_path}`;
+                setPreview(imageUrl);
+            }
         }
     }, [pet]);
 
@@ -50,6 +68,25 @@ const PetEdit = ({ params }: { params: Promise<{ id: string }> }) => {
         { name: 'blue', bg: 'bg-blue-500' },
     ];
 
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setTempImage(URL.createObjectURL(file));
+            setShowCropModal(true);
+        }
+    };
+
+    const onCropComplete = (croppedBlob: Blob) => {
+        const file = new File([croppedBlob], 'pet_avatar.jpg', { type: 'image/jpeg' });
+        setImage(file);
+        setPreview(URL.createObjectURL(croppedBlob));
+    };
+
+    const removeImage = () => {
+        setImage(null);
+        setPreview(null);
+    };
+
     if (!user || !pet) return <div className="min-h-screen flex items-center justify-center">読み込み中...</div>;
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -57,14 +94,22 @@ const PetEdit = ({ params }: { params: Promise<{ id: string }> }) => {
         setLoading(true);
         setErrors({});
 
+        const formData = new FormData();
+        // PUTリクエストでファイルを送るための擬似的なPOST（_method: PUT）
+        formData.append('_method', 'PUT');
+        formData.append('name', name);
+        formData.append('species', species);
+        if (breedId) formData.append('breed_id', breedId);
+        if (birthday) formData.append('birthday', birthday);
+        if (targetWeight) formData.append('target_weight', targetWeight);
+        formData.append('theme_color', themeColor);
+        if (image) formData.append('image', image);
+
         try {
-            await axios.put(`/api/pets/${petId}`, {
-                name,
-                species,
-                breed_id: breedId || null,
-                birthday: birthday || null,
-                target_weight: targetWeight || null,
-                theme_color: themeColor,
+            await axios.post(`/api/pets/${petId}`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
             });
             router.push('/dashboard');
         } catch (error: any) {
@@ -90,6 +135,13 @@ const PetEdit = ({ params }: { params: Promise<{ id: string }> }) => {
 
     return (
         <div className="min-h-screen bg-gray-50 py-12">
+            {showCropModal && tempImage && (
+                <ImageCropModal
+                    image={tempImage}
+                    onCropComplete={onCropComplete}
+                    onClose={() => setShowCropModal(false)}
+                />
+            )}
             <div className="max-w-md mx-auto bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
                 <div className="p-8 border-b border-gray-50 flex items-center justify-between">
                     <button onClick={() => router.back()} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
@@ -102,6 +154,37 @@ const PetEdit = ({ params }: { params: Promise<{ id: string }> }) => {
                 </div>
                 
                 <form onSubmit={handleSubmit} className="p-8 space-y-6">
+                    <div className="flex flex-col items-center mb-6">
+                        <label className="block text-sm font-bold text-gray-700 mb-4 w-full">顔写真</label>
+                        <div className="relative group">
+                            <div className={`w-32 h-32 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden bg-gray-50 transition-all ${!preview && 'hover:border-indigo-400 hover:bg-indigo-50'}`}>
+                                {preview ? (
+                                    <img src={preview} alt="Preview" className="w-full h-full object-cover" />
+                                ) : (
+                                    <Camera className="h-8 w-8 text-gray-400 group-hover:text-indigo-500 transition-colors" />
+                                )}
+                            </div>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleImageChange}
+                                className="absolute inset-0 opacity-0 cursor-pointer"
+                                title="写真をアップロード"
+                            />
+                            {preview && (
+                                <button
+                                    type="button"
+                                    onClick={removeImage}
+                                    className="absolute -top-1 -right-1 bg-red-500 text-white p-1.5 rounded-full shadow-md hover:bg-red-600 transition-colors"
+                                >
+                                    <X className="h-4 w-4" />
+                                </button>
+                            )}
+                        </div>
+                        <p className="mt-2 text-xs text-gray-400">クリックして写真を変更</p>
+                        {errors.image && <p className="mt-1 text-sm text-red-600">{errors.image[0]}</p>}
+                    </div>
+
                     <div>
                         <label className="block text-sm font-bold text-gray-700 mb-2">お名前</label>
                         <input
@@ -206,4 +289,10 @@ const PetEdit = ({ params }: { params: Promise<{ id: string }> }) => {
     );
 };
 
-export default PetEdit;
+export default function PetEdit({ params }: { params: any }) {
+    return (
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center">読み込み中...</div>}>
+            <PetEditContent params={params} />
+        </Suspense>
+    );
+}

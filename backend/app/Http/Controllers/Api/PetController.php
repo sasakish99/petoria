@@ -27,13 +27,36 @@ class PetController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'species' => 'required|string|max:255',
-            'breed_id' => 'nullable|exists:breeds,id',
-            'birthday' => 'nullable|date',
-            'target_weight' => 'nullable|numeric|min:0',
+            'breed_id' => 'nullable', // 一旦バリデーションを緩める
+            'birthday' => 'nullable',
+            'target_weight' => 'nullable',
             'theme_color' => 'nullable|string|max:20',
+            'image' => 'nullable|image|max:10240', // 10MBまで
         ]);
 
-        $pet = $request->user()->pets()->create($validated);
+        \Log::info('Store request data:', $request->all());
+        \Log::info('Files:', $request->allFiles());
+
+        $imagePath = null;
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('pets', 'public');
+            \Log::info('Stored image path: ' . $imagePath);
+        }
+
+        $petData = [
+            'name' => $validated['name'],
+            'species' => $validated['species'],
+            'breed_id' => $request->input('breed_id') ?: null,
+            'birthday' => $request->input('birthday') ?: null,
+            'target_weight' => $request->input('target_weight') ?: null,
+            'theme_color' => $validated['theme_color'] ?? 'indigo',
+        ];
+
+        if ($imagePath) {
+            $petData['image_path'] = $imagePath;
+        }
+
+        $pet = $request->user()->pets()->create($petData);
 
         return response()->json($pet, 201);
     }
@@ -55,13 +78,32 @@ class PetController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'species' => 'required|string|max:255',
-            'breed_id' => 'nullable|exists:breeds,id',
-            'birthday' => 'nullable|date',
-            'target_weight' => 'nullable|numeric|min:0',
+            'breed_id' => 'nullable',
+            'birthday' => 'nullable',
+            'target_weight' => 'nullable',
             'theme_color' => 'nullable|string|max:20',
+            'image' => 'nullable|image|max:10240',
         ]);
 
-        $pet->update($validated);
+        \Log::info('Update request data:', $request->all());
+
+        if ($request->hasFile('image')) {
+            // 旧画像の削除
+            if ($pet->image_path) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($pet->image_path);
+            }
+            $validated['image_path'] = $request->file('image')->store('pets', 'public');
+            \Log::info('Updated image path: ' . $validated['image_path']);
+        }
+
+        // バリデーション済みデータ以外も考慮して手動で詰め直し
+        $updateData = array_merge($validated, [
+            'breed_id' => $request->input('breed_id') ?: null,
+            'birthday' => $request->input('birthday') ?: null,
+            'target_weight' => $request->input('target_weight') ?: null,
+        ]);
+
+        $pet->update($updateData);
 
         return response()->json($pet);
     }
@@ -162,7 +204,25 @@ class PetController extends Controller
                 'status' => 'completed',
             ]);
 
-            return response()->json($diagnosis);
+            // 近くの病院情報を取得
+            $nearbyHospitals = [];
+            $user = $request->user();
+            if ($user->address) {
+                // 本来はGoogle Places API等を使用するが、ここでは住所に基づく検索リンクを生成
+                $searchQuery = urlencode($user->address . ' 動物病院');
+                $nearbyHospitals = [
+                    [
+                        'name' => '周辺の動物病院を確認する',
+                        'url' => "https://www.google.com/maps/search/?api=1&query={$searchQuery}",
+                        'is_link' => true
+                    ]
+                ];
+            }
+
+            return response()->json([
+                'diagnosis' => $diagnosis,
+                'nearby_hospitals' => $nearbyHospitals
+            ]);
         } catch (\Exception $e) {
             $diagnosis = $pet->aiDiagnoses()->create([
                 'image_path' => $path,

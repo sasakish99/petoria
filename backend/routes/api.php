@@ -15,6 +15,16 @@ Route::middleware(['auth:sanctum'])->group(function () {
         return $request->user();
     });
 
+    Route::put('/user', function (Request $request) {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'zipcode' => 'nullable|string|size:7',
+            'address' => 'nullable|string|max:255',
+        ]);
+        $request->user()->update($validated);
+        return response()->json($request->user());
+    });
+
     Route::get('/dashboard', [DashboardController::class, 'index']);
 
     Route::get('/breeds', BreedController::class);

@@ -68,7 +68,12 @@ const Dashboard = () => {
                             </Link>
                         </div>
                         <div className="flex items-center space-x-4">
-                            <span className="text-sm text-gray-600 hidden md:inline">{user.name} さん</span>
+                            <Link 
+                                href="/profile"
+                                className="text-sm font-medium text-gray-600 hover:text-indigo-600 transition-colors"
+                            >
+                                {user.name} さん
+                            </Link>
                             <button
                                 onClick={logout}
                                 className="text-sm font-medium text-gray-600 hover:text-indigo-600 transition-colors"
@@ -100,8 +105,16 @@ const Dashboard = () => {
                                                 : 'text-gray-500 hover:bg-gray-50'
                                         }`}
                                     >
-                                        <div className={`h-10 w-10 rounded-full flex-shrink-0 flex items-center justify-center text-white font-bold ${petTheme.bg}`}>
-                                            {pet.name.substring(0, 1)}
+                                        <div className={`h-10 w-10 rounded-full flex-shrink-0 flex items-center justify-center text-white font-bold overflow-hidden ${petTheme.bg}`}>
+                                            {pet.image_path ? (
+                                                <img 
+                                                    src={pet.image_path.startsWith('http') ? pet.image_path : `${process.env.NEXT_PUBLIC_BACKEND_URL}/storage/${pet.image_path}`} 
+                                                    alt={pet.name} 
+                                                    className="h-full w-full object-cover" 
+                                                />
+                                            ) : (
+                                                pet.name.substring(0, 1)
+                                            )}
                                         </div>
                                         <div className="ml-3 text-left hidden md:block">
                                             <div className="text-sm font-bold truncate">{pet.name}</div>
@@ -136,8 +149,16 @@ const Dashboard = () => {
                                             onClick={() => setActivePetId(pet.id)}
                                             className={`flex-shrink-0 flex flex-col items-center space-y-1 ${activePetId === pet.id ? petTheme.text : 'text-gray-400'}`}
                                         >
-                                            <div className={`h-14 w-14 rounded-full flex items-center justify-center text-white text-lg font-bold shadow-sm ${petTheme.bg} ${activePetId === pet.id ? 'ring-4 ring-white' : 'opacity-60'}`}>
-                                                {pet.name.substring(0, 1)}
+                                            <div className={`h-14 w-14 rounded-full flex items-center justify-center text-white text-lg font-bold shadow-sm overflow-hidden ${petTheme.bg} ${activePetId === pet.id ? 'ring-4 ring-white' : 'opacity-60'}`}>
+                                                {pet.image_path ? (
+                                                    <img 
+                                                        src={pet.image_path.startsWith('http') ? pet.image_path : `${process.env.NEXT_PUBLIC_BACKEND_URL}/storage/${pet.image_path}`} 
+                                                        alt={pet.name} 
+                                                        className="h-full w-full object-cover" 
+                                                    />
+                                                ) : (
+                                                    pet.name.substring(0, 1)
+                                                )}
                                             </div>
                                             <span className="text-xs font-bold">{pet.name}</span>
                                         </button>

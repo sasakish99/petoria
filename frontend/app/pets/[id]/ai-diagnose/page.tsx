@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/auth';
 import axios from '@/lib/axios';
 import { useRouter, useParams } from 'next/navigation';
-import { Camera, Upload, ChevronLeft, Loader2, AlertCircle } from 'lucide-react';
+import { Camera, Upload, ChevronLeft, Loader2, AlertCircle, MapPin, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 
 const AiDiagnose = () => {
@@ -18,6 +18,7 @@ const AiDiagnose = () => {
     const [preview, setPreview] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState<any>(null);
+    const [nearbyHospitals, setNearbyHospitals] = useState<any[]>([]);
     const [error, setError] = useState<string | null>(null);
     const [isDragging, setIsDragging] = useState(false);
 
@@ -78,7 +79,14 @@ const AiDiagnose = () => {
             const response = await axios.post(`/api/pets/${petId}/ai-diagnose`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
-            setResult(response.data);
+            // レスポンス形式の変更に対応
+            if (response.data.diagnosis) {
+                setResult(response.data.diagnosis);
+                setNearbyHospitals(response.data.nearby_hospitals || []);
+            } else {
+                setResult(response.data);
+                setNearbyHospitals([]);
+            }
         } catch (err: any) {
             console.error(err);
             setError(err.response?.data?.message || '解析中にエラーが発生しました。OpenAI APIキーが正しく設定されているか確認してください。');
@@ -189,6 +197,54 @@ const AiDiagnose = () => {
                                 <div className="prose prose-indigo max-w-none text-gray-700 bg-gray-50 p-6 rounded-2xl whitespace-pre-wrap leading-relaxed">
                                     {result.result_text}
                                 </div>
+
+                                {/* 近隣の病院情報 */}
+                                {nearbyHospitals.length > 0 ? (
+                                    <div className="mt-8 pt-8 border-t border-gray-100">
+                                        <h4 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+                                            <MapPin className="h-5 w-5 mr-2 text-rose-500" />
+                                            近隣の動物病院
+                                        </h4>
+                                        <div className="space-y-3">
+                                            {nearbyHospitals.map((hospital, idx) => (
+                                                <a 
+                                                    key={idx}
+                                                    href={hospital.url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="flex items-center justify-between p-4 bg-rose-50 border border-rose-100 rounded-xl hover:bg-rose-100 transition-colors group"
+                                                >
+                                                    <span className="font-medium text-rose-900">{hospital.name}</span>
+                                                    <ExternalLink className="h-4 w-4 text-rose-400 group-hover:text-rose-600 transition-colors" />
+                                                </a>
+                                            ))}
+                                        </div>
+                                        <p className="mt-3 text-[12px] text-gray-400 ml-1">
+                                            ※ご登録の住所（{user.address}）の周辺にある動物病院を検索しています。
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="mt-8 pt-8 border-t border-gray-100">
+                                        <div className="bg-amber-50 border border-amber-100 p-4 rounded-xl flex items-start">
+                                            <MapPin className="h-5 w-5 mr-3 mt-0.5 text-amber-500 flex-shrink-0" />
+                                            <div>
+                                                <p className="text-sm font-medium text-amber-900">
+                                                    住所を登録すると周辺の病院が表示されます
+                                                </p>
+                                                <p className="text-xs text-amber-700 mt-1">
+                                                    プロフィール画面から住所を設定すると、診断後に近隣の動物病院を自動でご案内できるようになります。
+                                                </p>
+                                                <Link 
+                                                    href="/profile"
+                                                    className="inline-block mt-2 text-xs font-bold text-amber-800 hover:underline"
+                                                >
+                                                    住所を登録しに行く
+                                                </Link>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
                                 <div className="mt-8 flex flex-col sm:flex-row gap-4">
                                     <button 
                                         onClick={() => setResult(null)}

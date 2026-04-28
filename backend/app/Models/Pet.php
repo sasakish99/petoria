@@ -11,6 +11,7 @@ class Pet extends Model
         'name',
         'species',
         'breed_id',
+        'image_path',
         'birthday',
         'target_weight',
         'theme_color',
