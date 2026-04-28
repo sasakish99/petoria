@@ -14,7 +14,8 @@ import {
   Legend,
   BarChart,
   Bar,
-  Cell
+  Cell,
+  ReferenceLine
 } from 'recharts';
 import { Calendar, Bell, PlusCircle, Activity, ClipboardList, HeartPulse, Utensils, Scale, CloudSun } from 'lucide-react';
 import { format, differenceInYears, differenceInMonths, subDays, isSameDay, parseISO } from 'date-fns';
@@ -132,6 +133,18 @@ const Dashboard = () => {
     };
 
     const theme = getThemeColors(activePet?.theme_color || 'indigo');
+
+    const getLatestWeight = (healthLogs: any[]) => {
+        const sortedLogs = [...healthLogs]
+            .filter(log => log.weight)
+            .sort((a, b) => new Date(b.logged_at).getTime() - new Date(a.logged_at).getTime());
+        return sortedLogs.length > 0 ? sortedLogs[0].weight : null;
+    };
+
+    const latestWeight = activePet ? getLatestWeight(activePet.health_logs) : null;
+    const weightDiff = (latestWeight && activePet?.target_weight) 
+        ? latestWeight - activePet.target_weight 
+        : null;
 
     return (
         <div className="h-[calc(100vh-64px)] bg-gray-50 flex flex-col overflow-hidden">
@@ -254,6 +267,17 @@ const Dashboard = () => {
                                             {activePet.breed?.name ?? ''}
                                             {activePet.birthday && ` • ${calculateAge(activePet.birthday)}`}
                                         </p>
+                                        {latestWeight && (
+                                            <div className="flex items-center ml-2 bg-white px-2 py-0.5 rounded-full border border-gray-100 shadow-sm">
+                                                <span className="text-xs font-bold text-gray-700">{latestWeight}kg</span>
+                                                {weightDiff !== null && (
+                                                    <span className={`text-[10px] font-black ml-1.5 ${weightDiff > 0 ? 'text-rose-500' : weightDiff < 0 ? 'text-emerald-500' : 'text-gray-400'}`}>
+                                                        {weightDiff > 0 ? `+${weightDiff.toFixed(2)}` : weightDiff.toFixed(2)}
+                                                        <span className="ml-0.5 opacity-70">目標比</span>
+                                                    </span>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="flex space-x-2">
                                         <Link 
@@ -362,7 +386,7 @@ const Dashboard = () => {
                                             <ResponsiveContainer width="100%" height="100%">
                                                 <LineChart 
                                                     data={[...activePet.health_logs].filter(log => log.weight).reverse()}
-                                                    margin={{ left: 0, right: 10, top: 5, bottom: 5 }}
+                                                    margin={{ left: 0, right: 60, top: 5, bottom: 5 }}
                                                 >
                                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
                                                     <XAxis 
@@ -382,8 +406,30 @@ const Dashboard = () => {
                                                     <Tooltip 
                                                         contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 2px 4px -1px rgb(0 0 0 / 0.1)', fontSize: '10px' }}
                                                         labelFormatter={(label) => format(new Date(label), 'yyyy/MM/dd(E)', { locale: ja })}
-                                                        formatter={(value) => [`${value} kg`, '体重']}
+                                                        formatter={(value: number) => {
+                                                            const labels = [`${value} kg`, '体重'];
+                                                            if (activePet.target_weight) {
+                                                                const diff = value - activePet.target_weight;
+                                                                const diffStr = diff > 0 ? `+${diff.toFixed(2)}` : diff.toFixed(2);
+                                                                labels[0] = `${value} kg (目標比: ${diffStr} kg)`;
+                                                            }
+                                                            return labels;
+                                                        }}
                                                     />
+                                                    {activePet.target_weight && (
+                                                        <ReferenceLine 
+                                                            y={activePet.target_weight} 
+                                                            stroke="#ef4444" 
+                                                            strokeDasharray="3 3"
+                                                            label={{ 
+                                                                value: `目標: ${activePet.target_weight}kg`, 
+                                                                position: 'right', 
+                                                                fill: '#ef4444',
+                                                                fontSize: 8,
+                                                                fontWeight: 'bold'
+                                                            }} 
+                                                        />
+                                                    )}
                                                     <Line 
                                                         type="monotone" 
                                                         dataKey="weight" 
@@ -416,7 +462,7 @@ const Dashboard = () => {
                                             <ResponsiveContainer width="100%" height="100%">
                                                 <BarChart 
                                                     data={getWeeklyExerciseData(activePet.health_logs)}
-                                                    margin={{ left: 0, right: 10, top: 5, bottom: 5 }}
+                                                    margin={{ left: 0, right: 30, top: 5, bottom: 5 }}
                                                 >
                                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
                                                     <XAxis 
