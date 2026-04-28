@@ -30,6 +30,7 @@ class PetController extends Controller
             'breed_id' => 'nullable|exists:breeds,id',
             'birthday' => 'nullable|date',
             'target_weight' => 'nullable|numeric|min:0',
+            'theme_color' => 'nullable|string|max:20',
         ]);
 
         $pet = $request->user()->pets()->create($validated);
@@ -57,6 +58,7 @@ class PetController extends Controller
             'breed_id' => 'nullable|exists:breeds,id',
             'birthday' => 'nullable|date',
             'target_weight' => 'nullable|numeric|min:0',
+            'theme_color' => 'nullable|string|max:20',
         ]);
 
         $pet->update($validated);

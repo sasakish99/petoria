@@ -13,6 +13,7 @@ class Pet extends Model
         'breed_id',
         'birthday',
         'target_weight',
+        'theme_color',
     ];
 
     protected $casts = [
