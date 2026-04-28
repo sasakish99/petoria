@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { useAuth } from '@/hooks/auth';
 import axios from '@/lib/axios';
 import { useRouter } from 'next/navigation';
 import useSWR from 'swr';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, Trash2 } from 'lucide-react';
 
-const PetCreate = () => {
+const PetEdit = ({ params }: { params: Promise<{ id: string }> }) => {
+    const { id: petId } = use(params);
     const router = useRouter();
     const { user } = useAuth({ middleware: 'auth' });
     
@@ -20,6 +21,27 @@ const PetCreate = () => {
     const [errors, setErrors] = useState<any>({});
     const [loading, setLoading] = useState(false);
 
+    const { data: pet } = useSWR(petId ? `/api/pets/${petId}` : null, () =>
+        axios.get(`/api/pets/${petId}`).then(res => res.data)
+    );
+
+    const { data: breeds } = useSWR('/api/breeds', () =>
+        axios.get('/api/breeds').then(res => res.data)
+    );
+
+    useEffect(() => {
+        if (pet) {
+            setName(pet.name);
+            setSpecies(pet.species);
+            setBreedId(pet.breed_id?.toString() || '');
+            setBirthday(pet.birthday || '');
+            setTargetWeight(pet.target_weight?.toString() || '');
+            setThemeColor(pet.theme_color || 'indigo');
+        }
+    }, [pet]);
+
+    const filteredBreeds = breeds?.filter((b: any) => b.species === species) || [];
+
     const themeColors = [
         { name: 'indigo', bg: 'bg-indigo-600' },
         { name: 'rose', bg: 'bg-rose-500' },
@@ -28,17 +50,7 @@ const PetCreate = () => {
         { name: 'blue', bg: 'bg-blue-500' },
     ];
 
-    const { data: breeds } = useSWR('/api/breeds', () =>
-        axios.get('/api/breeds').then(res => res.data)
-    );
-
-    const filteredBreeds = breeds?.filter((b: any) => b.species === species) || [];
-
-    useEffect(() => {
-        setBreedId('');
-    }, [species]);
-
-    if (!user) return null;
+    if (!user || !pet) return <div className="min-h-screen flex items-center justify-center">読み込み中...</div>;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -46,7 +58,7 @@ const PetCreate = () => {
         setErrors({});
 
         try {
-            console.log('Submitting pet data:', {
+            await axios.put(`/api/pets/${petId}`, {
                 name,
                 species,
                 breed_id: breedId || null,
@@ -54,18 +66,8 @@ const PetCreate = () => {
                 target_weight: targetWeight || null,
                 theme_color: themeColor,
             });
-            const response = await axios.post('/api/pets', {
-                name,
-                species,
-                breed_id: breedId || null,
-                birthday: birthday || null,
-                target_weight: targetWeight || null,
-                theme_color: themeColor,
-            });
-            console.log('Response:', response.data);
             router.push('/dashboard');
         } catch (error: any) {
-            console.error('Submit error:', error);
             if (error.response && error.response.status === 422) {
                 setErrors(error.response.data.errors);
             }
@@ -74,14 +76,29 @@ const PetCreate = () => {
         }
     };
 
+    const handleDelete = async () => {
+        if (!confirm('このペットを削除してもよろしいですか？この操作は取り消せません。')) return;
+        
+        try {
+            await axios.delete(`/api/pets/${petId}`);
+            router.push('/dashboard');
+        } catch (error) {
+            console.error('Delete error:', error);
+            alert('削除に失敗しました。');
+        }
+    };
+
     return (
         <div className="min-h-screen bg-gray-50 py-12">
             <div className="max-w-md mx-auto bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
-                <div className="p-8 border-b border-gray-50 flex items-center">
-                    <button onClick={() => router.back()} className="p-2 mr-4 hover:bg-gray-100 rounded-full transition-colors">
+                <div className="p-8 border-b border-gray-50 flex items-center justify-between">
+                    <button onClick={() => router.back()} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
                         <ChevronLeft className="h-6 w-6 text-gray-500" />
                     </button>
-                    <h2 className="text-xl font-bold text-gray-900">ペットを登録する</h2>
+                    <h2 className="text-xl font-bold text-gray-900">プロフィール編集</h2>
+                    <button onClick={handleDelete} className="p-2 hover:bg-red-50 rounded-full transition-colors group">
+                        <Trash2 className="h-5 w-5 text-gray-400 group-hover:text-red-500" />
+                    </button>
                 </div>
                 
                 <form onSubmit={handleSubmit} className="p-8 space-y-6">
@@ -133,7 +150,7 @@ const PetCreate = () => {
                     )}
 
                     <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">誕生日 (任意)</label>
+                        <label className="block text-sm font-bold text-gray-700 mb-2">誕生日</label>
                         <input
                             type="date"
                             value={birthday}
@@ -144,7 +161,7 @@ const PetCreate = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">目標体重 (kg, 任意)</label>
+                        <label className="block text-sm font-bold text-gray-700 mb-2">目標体重 (kg)</label>
                         <input
                             type="number"
                             step="0.01"
@@ -180,7 +197,7 @@ const PetCreate = () => {
                             disabled={loading}
                             className="w-full py-4 px-6 rounded-2xl text-white font-bold bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all disabled:opacity-50"
                         >
-                            {loading ? '登録中...' : '登録する'}
+                            {loading ? '保存中...' : '変更を保存する'}
                         </button>
                     </div>
                 </form>
@@ -189,4 +206,4 @@ const PetCreate = () => {
     );
 };
 
-export default PetCreate;
+export default PetEdit;
