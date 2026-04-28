@@ -16,8 +16,8 @@ import {
   Bar,
   Cell
 } from 'recharts';
-import { Calendar, Bell, PlusCircle, Activity, ClipboardList, HeartPulse, Utensils, Scale } from 'lucide-react';
-import { format, differenceInYears, differenceInMonths, subDays, isSameDay } from 'date-fns';
+import { Calendar, Bell, PlusCircle, Activity, ClipboardList, HeartPulse, Utensils, Scale, CloudSun } from 'lucide-react';
+import { format, differenceInYears, differenceInMonths, subDays, isSameDay, parseISO } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
@@ -107,6 +107,28 @@ const Dashboard = () => {
             blue: { bg: 'bg-blue-500', hover: 'hover:bg-blue-600', text: 'text-blue-600', light: 'bg-blue-50', border: 'border-blue-100', dot: '#3b82f6' },
         };
         return colors[color] || colors.indigo;
+    };
+
+    const getWeatherAdvice = (code: number, tempMax: number) => {
+        // WMO Weather interpretation codes (WW)
+        if (code >= 95) return { text: '雷雨の予報です。お散歩は控えましょう。', color: 'text-red-600' };
+        if (code >= 61) return { text: '雨が降る予報です。レインコートの準備を。', color: 'text-blue-600' };
+        if (code >= 51) return { text: '小雨の予報です。足元に注意してください。', color: 'text-blue-500' };
+        if (tempMax >= 30) return { text: '気温が高いです。涼しい時間帯を選びましょう。', color: 'text-orange-600' };
+        if (tempMax <= 5) return { text: '寒いので防寒対策をしっかりして出かけましょう。', color: 'text-blue-700' };
+        return { text: 'お散歩日和です！', color: 'text-green-600' };
+    };
+
+    const getWeatherIcon = (code: number) => {
+        if (code <= 1) return '☀️';
+        if (code <= 3) return '☁️';
+        if (code <= 48) return '🌫️';
+        if (code <= 55) return '🌦️';
+        if (code <= 67) return '🌧️';
+        if (code <= 77) return '❄️';
+        if (code <= 82) return '🌧️';
+        if (code <= 86) return '❄️';
+        return '⛈️';
     };
 
     const theme = getThemeColors(activePet?.theme_color || 'indigo');
@@ -263,6 +285,73 @@ const Dashboard = () => {
                                 </div>
 
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                                    {/* 天気予報セクション */}
+                                    {dashboardData.weather && (
+                                        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 lg:col-span-2">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <h3 className="text-sm font-bold flex items-center text-gray-800">
+                                                    <CloudSun className="h-4 w-4 mr-1.5 text-blue-500" />
+                                                    お散歩のお天気（{dashboardData.weather.location}）
+                                                </h3>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                {dashboardData.weather.forecast.map((f: any, i: number) => {
+                                                    const advice = getWeatherAdvice(f.weather_code, f.temp_max);
+                                                    const date = parseISO(f.date);
+                                                    return (
+                                                        <div key={f.date} className={`p-3 rounded-lg border bg-gray-50 border-gray-100 ${i === 0 ? 'col-span-2' : 'col-span-2 sm:col-span-1'}`}>
+                                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2">
+                                                                <span className="text-xs font-bold text-gray-500">
+                                                                    {i === 0 ? '今日' : i === 1 ? '明日' : '明後日'}
+                                                                    <span className="ml-1 md:inline hidden">{format(date, 'MM/dd(E)', { locale: ja })}</span>
+                                                                </span>
+                                                                <div className="flex items-center space-x-2">
+                                                                    <span className="text-xs leading-tight font-medium text-gray-500 sm:block hidden">
+                                                                        {advice.text}
+                                                                    </span>
+                                                                    <span className="text-3xl">{getWeatherIcon(f.weather_code)}</span>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex items-baseline space-x-1.5 mb-1.5">
+                                                                <span className="text-lg font-bold text-gray-800">{f.temp_max}°</span>
+                                                                <span className="text-xs text-gray-400">{f.temp_min}°</span>
+                                                                <span className="text-xs text-blue-500 ml-auto">{f.precipitation_probability}%</span>
+                                                            </div>
+                                                            
+                                                            {/* 今日の時間別予報 */}
+                                                            {i === 0 && f.hourly && (
+                                                                <div className="mt-3 pt-3 border-t border-gray-200 overflow-x-auto scrollbar-hide">
+                                                                    <div className="flex justify-between min-w-max pb-1 gap-4">
+                                                                        {f.hourly.map((h: any) => (
+                                                                            <div key={h.time} className="flex flex-col items-center space-y-1 px-1">
+                                                                                <span className="text-[10px] text-gray-400 font-medium">
+                                                                                    {format(parseISO(h.time), 'H')}時
+                                                                                </span>
+                                                                                <span className="text-lg leading-none">
+                                                                                    {getWeatherIcon(h.weather_code)}
+                                                                                </span>
+                                                                                <span className="text-xs font-bold text-gray-700">
+                                                                                    {Math.round(h.temp)}°
+                                                                                </span>
+                                                                                <span className="text-[9px] text-blue-400 font-bold">
+                                                                                    {h.precipitation_probability}%
+                                                                                </span>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+
+                                                            <p className={`text-xs leading-tight font-medium ${advice.color} sm:hidden block mt-1`}>
+                                                                {advice.text}
+                                                            </p>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {/* 体重グラフ */}
                                     <div className="bg-white p-3 rounded-xl shadow-sm border border-gray-100">
                                         <h3 className="text-xs font-bold mb-2 flex items-center text-gray-800">
