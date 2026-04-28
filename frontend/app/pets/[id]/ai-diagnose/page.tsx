@@ -17,6 +17,7 @@ const AiDiagnose = () => {
     const [image, setImage] = useState<File | null>(null);
     const [preview, setPreview] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
+    const [targetPart, setTargetPart] = useState('overall');
     const [result, setResult] = useState<any>(null);
     const [nearbyHospitals, setNearbyHospitals] = useState<any[]>([]);
     const [error, setError] = useState<string | null>(null);
@@ -74,6 +75,7 @@ const AiDiagnose = () => {
         
         const formData = new FormData();
         formData.append('image', image);
+        formData.append('target_part', targetPart);
 
         try {
             const response = await axios.post(`/api/pets/${petId}/ai-diagnose`, formData, {
@@ -126,6 +128,25 @@ const AiDiagnose = () => {
                             </div>
 
                             <form onSubmit={handleSubmit} className="space-y-6">
+                                <div className="space-y-2">
+                                    <label htmlFor="target_part" className="block text-sm font-medium text-gray-700">
+                                        重点的に診断したい箇所
+                                    </label>
+                                    <select
+                                        id="target_part"
+                                        value={targetPart}
+                                        onChange={(e) => setTargetPart(e.target.value)}
+                                        className="w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm py-3"
+                                    >
+                                        <option value="overall">全体（おまかせ）</option>
+                                        <option value="eyes">目・瞳（充血、にごりなど）</option>
+                                        <option value="teeth">歯・口内（歯石、赤みなど）</option>
+                                        <option value="ears">耳（汚れ、赤みなど）</option>
+                                        <option value="skin">皮膚・被毛（赤み、つやなど）</option>
+                                        <option value="physique">体格・姿勢（太り過ぎ、痩せ過ぎなど）</option>
+                                    </select>
+                                </div>
+
                                 <div 
                                     className="relative"
                                     onDragOver={handleDragOver}

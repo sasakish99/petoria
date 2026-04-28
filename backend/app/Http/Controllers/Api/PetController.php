@@ -124,11 +124,28 @@ class PetController extends Controller
             abort(403);
         }
 
+        \Log::info('AI Diagnose request data:', $request->all());
+        \Log::info('Pet details:', ['id' => $pet->id, 'species' => $pet->species, 'breed' => $pet->breed?->name]);
+
         $request->validate([
             'image' => 'required|image|max:10240', // 10MB max
+            'target_part' => 'nullable|string',
         ]);
 
         $image = $request->file('image');
+        $targetPart = $request->input('target_part', 'overall');
+
+        $partMapping = [
+            'overall' => '全体',
+            'eyes' => '目・瞳',
+            'teeth' => '歯・口内',
+            'ears' => '耳',
+            'skin' => '皮膚・被毛',
+            'physique' => '体格・姿勢',
+        ];
+
+        $targetPartName = $partMapping[$targetPart] ?? '全体';
+
         $path = $image->store('ai_diagnoses', 'public');
         $base64Image = base64_encode(file_get_contents($image->path()));
 
@@ -170,7 +187,7 @@ class PetController extends Controller
                             [
                                 'type' => 'text',
                                 'text' => "このペット（{$pet->species}、種類：{$pet->breed?->name}）の画像を診断してください。
-画像から見える目の輝き、毛並み、皮膚、体格、姿勢などをプロの視点で観察し、具体的な箇所を褒める、または指摘して、自信に満ちたトーンで回答してください。
+今回は特に「{$targetPartName}」の部分を重点的に、プロの視点で観察し、具体的な箇所を褒める、または指摘して、自信に満ちたトーンで回答してください。
 また、この品種（{$pet->breed?->name}）がかかりやすい病気や、日常で気をつけるべき予防アドバイスも必ず含めてください。",
                             ],
                             [
@@ -186,6 +203,7 @@ class PetController extends Controller
             ]);
 
             if ($response->failed()) {
+                \Log::error('OpenAI API error:', ['status' => $response->status(), 'body' => $response->body()]);
                 $errorData = $response->json();
                 if (isset($errorData['error']['code']) && $errorData['error']['code'] === 'insufficient_quota') {
                     return response()->json([
