@@ -134,11 +134,11 @@ const Dashboard = () => {
     const theme = getThemeColors(activePet?.theme_color || 'indigo');
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col h-screen overflow-hidden">
-            <div className="flex-1 flex overflow-hidden pt-4">
+        <div className="h-[calc(100vh-64px)] bg-gray-50 flex flex-col overflow-hidden">
+            <div className="flex-1 flex overflow-hidden">
                 {/* サイドバー - ペットセレクター */}
                 {hasPets && (
-                    <aside className="w-20 md:w-64 bg-white border-r border-gray-200 overflow-y-auto hidden sm:block">
+                    <aside className="w-20 md:w-64 bg-white border-r border-gray-200 hidden sm:block flex-shrink-0 pt-4">
                         <div className="p-4 space-y-4">
                             <div className="px-2 pb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider hidden md:block">
                                 ペット
@@ -189,7 +189,7 @@ const Dashboard = () => {
                     </aside>
                 )}
 
-                <main className="flex-1 overflow-y-auto pt-6 pb-2">
+                <main className="flex-1 overflow-y-auto pt-4 pb-2">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         {/* モバイル用ペットセレクター */}
                         {hasPets && (
