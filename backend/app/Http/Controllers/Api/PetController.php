@@ -29,6 +29,7 @@ class PetController extends Controller
             'species' => 'required|string|max:255',
             'breed_id' => 'nullable', // 一旦バリデーションを緩める
             'birthday' => 'nullable',
+            'last_vaccination_date' => 'nullable|date',
             'target_weight' => 'nullable',
             'theme_color' => 'nullable|string|max:20',
             'image' => 'nullable|image|max:10240', // 10MBまで
@@ -48,6 +49,7 @@ class PetController extends Controller
             'species' => $validated['species'],
             'breed_id' => $request->input('breed_id') ?: null,
             'birthday' => $request->input('birthday') ?: null,
+            'last_vaccination_date' => $request->input('last_vaccination_date') ?: null,
             'target_weight' => $request->input('target_weight') ?: null,
             'theme_color' => $validated['theme_color'] ?? 'indigo',
         ];
@@ -80,6 +82,7 @@ class PetController extends Controller
             'species' => 'required|string|max:255',
             'breed_id' => 'nullable',
             'birthday' => 'nullable',
+            'last_vaccination_date' => 'nullable|date',
             'target_weight' => 'nullable',
             'theme_color' => 'nullable|string|max:20',
             'image' => 'nullable|image|max:10240',
@@ -100,6 +103,7 @@ class PetController extends Controller
         $updateData = array_merge($validated, [
             'breed_id' => $request->input('breed_id') ?: null,
             'birthday' => $request->input('birthday') ?: null,
+            'last_vaccination_date' => $request->input('last_vaccination_date') ?: null,
             'target_weight' => $request->input('target_weight') ?: null,
         ]);
 

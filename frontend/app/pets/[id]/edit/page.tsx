@@ -46,7 +46,7 @@ const PetEditContent = ({ params }: { params: any }) => {
             setName(pet.name);
             setSpecies(pet.species);
             setBreedId(pet.breed_id?.toString() || '');
-            setBirthday(pet.birthday || '');
+            setBirthday(pet.birthday ? pet.birthday.split('T')[0] : '');
             setTargetWeight(pet.target_weight?.toString() || '');
             setThemeColor(pet.theme_color || 'indigo');
             if (pet.image_path) {

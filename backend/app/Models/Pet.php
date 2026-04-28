@@ -13,6 +13,7 @@ class Pet extends Model
         'breed_id',
         'image_path',
         'birthday',
+        'last_vaccination_date',
         'target_weight',
         'theme_color',
     ];

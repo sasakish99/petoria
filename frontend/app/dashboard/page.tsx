@@ -11,10 +11,13 @@ import {
   CartesianGrid, 
   Tooltip, 
   ResponsiveContainer,
-  Legend 
+  Legend,
+  BarChart,
+  Bar,
+  Cell
 } from 'recharts';
 import { Calendar, Bell, PlusCircle, Activity, ClipboardList, HeartPulse, Utensils, Scale } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, differenceInYears, differenceInMonths, subDays, isSameDay } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -24,6 +27,39 @@ const Dashboard = () => {
     const { user, logout } = useAuth({ middleware: 'auth' });
     const [selectedPetForLog, setSelectedPetForLog] = useState<any>(null);
     const [activePetId, setActivePetId] = useState<number | null>(null);
+
+    const calculateAge = (birthday: string) => {
+        if (!birthday) return '';
+        const birthDate = new Date(birthday);
+        const today = new Date();
+        
+        const years = differenceInYears(today, birthDate);
+        const months = differenceInMonths(today, birthDate) % 12;
+        
+        if (years === 0) {
+            return `${months}ヶ月`;
+        }
+        return `${years}歳${months}ヶ月`;
+    };
+
+    const getWeeklyExerciseData = (healthLogs: any[]) => {
+        const today = new Date();
+        const data = [];
+        
+        for (let i = 6; i >= 0; i--) {
+            const date = subDays(today, i);
+            const dateStr = format(date, 'yyyy-MM-dd');
+            const log = healthLogs.find(l => isSameDay(new Date(l.logged_at), date));
+            
+            data.push({
+                date: dateStr,
+                displayDate: format(date, 'MM/dd(E)', { locale: ja }),
+                exercise_duration: log?.exercise_duration || 0,
+            });
+        }
+        
+        return data;
+    };
     
     const { data: dashboardData, error, mutate } = useSWR('/api/dashboard', () =>
         axios.get('/api/dashboard').then(res => res.data),
@@ -118,7 +154,10 @@ const Dashboard = () => {
                                         </div>
                                         <div className="ml-3 text-left hidden md:block">
                                             <div className="text-sm font-bold truncate">{pet.name}</div>
-                                            <div className="text-xs opacity-70">{pet.breed?.name || pet.species}</div>
+                                            <div className="text-xs opacity-70">
+                                                {pet.breed?.name ?? ''}
+                                                {pet.birthday && ` (${calculateAge(pet.birthday)})`}
+                                            </div>
                                         </div>
                                     </button>
                                 );
@@ -136,11 +175,11 @@ const Dashboard = () => {
                     </aside>
                 )}
 
-                <main className="flex-1 overflow-y-auto py-8">
-                    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+                <main className="flex-1 overflow-y-auto py-2">
+                    <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6">
                         {/* モバイル用ペットセレクター */}
                         {hasPets && (
-                            <div className="flex sm:hidden overflow-x-auto pb-6 space-x-4 scrollbar-hide">
+                            <div className="flex sm:hidden overflow-x-auto pb-2 space-x-3 scrollbar-hide">
                                 {dashboardData.pets.map((pet: any) => {
                                     const petTheme = getThemeColors(pet.theme_color || 'indigo');
                                     return (
@@ -161,6 +200,11 @@ const Dashboard = () => {
                                                 )}
                                             </div>
                                             <span className="text-xs font-bold">{pet.name}</span>
+                                            {pet.birthday && (
+                                                <span className="text-[10px] opacity-70 whitespace-nowrap">
+                                                    {calculateAge(pet.birthday)}
+                                                </span>
+                                            )}
                                         </button>
                                     );
                                 })}
@@ -177,88 +221,95 @@ const Dashboard = () => {
                         )}
 
                         {!hasPets ? (
-                            <div className="bg-white rounded-xl shadow-sm p-12 text-center">
-                                <div className="mx-auto w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mb-4">
-                                    <PlusCircle className="h-8 w-8 text-indigo-600" />
+                            <div className="bg-white rounded-xl shadow-sm p-8 text-center">
+                                <div className="mx-auto w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center mb-3">
+                                    <PlusCircle className="h-6 w-6 text-indigo-600" />
                                 </div>
-                                <h3 className="text-lg font-medium text-gray-900 mb-2">ペットが登録されていません</h3>
-                                <p className="text-gray-500 mb-6">まずは大切なペットのプロフィールを作成しましょう。</p>
-                                <Link href="/pets/create" className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+                                <h3 className="text-lg font-medium text-gray-900 mb-1">ペットが登録されていません</h3>
+                                <p className="text-gray-500 mb-4 text-sm">まずは大切なペットのプロフィールを作成しましょう。</p>
+                                <Link href="/pets/create" className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-bold">
                                     ペットを登録する
                                 </Link>
                             </div>
                         ) : (
-                            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <h2 className="text-3xl font-extrabold text-gray-900">{activePet.name}</h2>
-                                        <p className="text-gray-500">{activePet.breed?.name || activePet.species}</p>
+                                        <h2 className="text-xl font-extrabold text-gray-900 leading-tight">{activePet.name}</h2>
+                                        <p className="text-xs text-gray-500">
+                                            {activePet.breed?.name ?? ''}
+                                            {activePet.birthday && ` • ${calculateAge(activePet.birthday)}`}
+                                        </p>
                                     </div>
                                     <div className="flex space-x-2">
                                         <Link 
                                             href={`/pets/${activePet.id}/edit`}
-                                            className="px-4 py-2 text-sm bg-white border border-gray-200 rounded-xl shadow-sm hover:bg-gray-50 transition-all text-gray-600 font-bold"
+                                            className="px-3.5 py-2 text-xs bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 transition-all text-gray-600 font-bold flex items-center"
                                         >
                                             編集
                                         </Link>
                                         <button 
                                             onClick={() => setSelectedPetForLog(activePet)}
-                                            className={`px-4 py-2 text-sm bg-white border border-gray-200 rounded-xl shadow-sm hover:bg-gray-50 transition-all flex items-center font-bold ${theme.text}`}
+                                            className={`px-3.5 py-2 text-xs bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 transition-all flex items-center font-bold ${theme.text}`}
                                         >
-                                            <PlusCircle className="h-4 w-4 mr-2" />
+                                            <PlusCircle className="h-4 w-4 mr-1.5" />
                                             記録
                                         </button>
                                         <Link 
                                             href={`/pets/${activePet.id}/ai-diagnose`}
-                                            className={`px-4 py-2 text-sm text-white rounded-xl shadow-md transition-all font-bold ${theme.bg} ${theme.hover}`}
+                                            className={`px-3.5 py-2 text-xs text-white rounded-lg shadow-md transition-all font-bold flex items-center ${theme.bg} ${theme.hover}`}
                                         >
                                             AI診断
                                         </Link>
                                         <Link 
                                             href={`/pets/${activePet.id}/history`}
-                                            className="px-4 py-2 text-sm bg-white border border-gray-200 rounded-xl shadow-sm hover:bg-gray-50 transition-all text-gray-600 font-bold"
+                                            className="px-3.5 py-2 text-xs bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 transition-all text-gray-600 font-bold flex items-center"
                                         >
                                             履歴
                                         </Link>
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                                     {/* 体重グラフ */}
-                                    <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                                        <h3 className="text-lg font-bold mb-6 flex items-center text-gray-800">
-                                            <Activity className={`h-5 w-5 mr-2 ${theme.text}`} />
+                                    <div className="bg-white p-3 rounded-xl shadow-sm border border-gray-100">
+                                        <h3 className="text-xs font-bold mb-2 flex items-center text-gray-800">
+                                            <Activity className={`h-3.5 w-3.5 mr-1.5 ${theme.text}`} />
                                             体重推移 (kg)
                                         </h3>
-                                        <div className="h-72 w-full">
+                                        <div className="h-44 w-full">
                                             <ResponsiveContainer width="100%" height="100%">
-                                                <LineChart data={[...activePet.health_logs].filter(log => log.weight).reverse()}>
+                                                <LineChart 
+                                                    data={[...activePet.health_logs].filter(log => log.weight).reverse()}
+                                                    margin={{ left: 0, right: 10, top: 5, bottom: 5 }}
+                                                >
                                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
                                                     <XAxis 
                                                         dataKey="logged_at" 
-                                                        tickFormatter={(str) => format(new Date(str), 'MM/dd')}
-                                                        tick={{ fontSize: 12, fill: '#9ca3af' }}
+                                                        tickFormatter={(str) => format(new Date(str), 'MM/dd(E)', { locale: ja })}
+                                                        tick={{ fontSize: 9, fill: '#9ca3af' }}
                                                         axisLine={false}
                                                         tickLine={false}
                                                     />
                                                     <YAxis 
                                                         domain={['auto', 'auto']} 
-                                                        tick={{ fontSize: 12, fill: '#9ca3af' }}
+                                                        tick={{ fontSize: 9, fill: '#9ca3af' }}
                                                         axisLine={false}
                                                         tickLine={false}
+                                                        width={35}
                                                     />
                                                     <Tooltip 
-                                                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                                                        labelFormatter={(label) => format(new Date(label), 'yyyy/MM/dd')}
+                                                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 2px 4px -1px rgb(0 0 0 / 0.1)', fontSize: '10px' }}
+                                                        labelFormatter={(label) => format(new Date(label), 'yyyy/MM/dd(E)', { locale: ja })}
                                                         formatter={(value) => [`${value} kg`, '体重']}
                                                     />
                                                     <Line 
                                                         type="monotone" 
                                                         dataKey="weight" 
                                                         stroke={theme.dot} 
-                                                        strokeWidth={4}
-                                                        dot={{ r: 6, fill: theme.dot, strokeWidth: 2, stroke: '#fff' }}
-                                                        activeDot={{ r: 8, strokeWidth: 0 }}
+                                                        strokeWidth={2.5}
+                                                        dot={{ r: 3, fill: theme.dot, strokeWidth: 1.5, stroke: '#fff' }}
+                                                        activeDot={{ r: 5, strokeWidth: 0 }}
                                                         connectNulls
                                                     />
                                                 </LineChart>
@@ -266,93 +317,163 @@ const Dashboard = () => {
                                         </div>
                                     </div>
 
-                                    {/* お知らせ・リマインダー */}
-                                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                                        <h3 className="text-lg font-bold mb-6 flex items-center text-gray-800">
-                                            <Bell className="h-5 w-5 mr-2 text-amber-500" />
+                                    {/* 散歩時間グラフ */}
+                                    <div className="bg-white p-3 rounded-xl shadow-sm border border-gray-100">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <h3 className="text-xs font-bold flex items-center text-gray-800">
+                                                <Activity className="h-3.5 w-3.5 mr-1.5 text-emerald-500" />
+                                                1週間の散歩 (分)
+                                            </h3>
+                                            <div className="text-right">
+                                                <span className="text-base font-black text-gray-900">
+                                                    {getWeeklyExerciseData(activePet.health_logs).reduce((acc, curr) => acc + (curr.exercise_duration || 0), 0)}
+                                                </span>
+                                                <span className="text-[9px] font-bold text-gray-400 ml-0.5">分</span>
+                                            </div>
+                                        </div>
+                                        <div className="h-44 w-full">
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <BarChart 
+                                                    data={getWeeklyExerciseData(activePet.health_logs)}
+                                                    margin={{ left: 0, right: 10, top: 5, bottom: 5 }}
+                                                >
+                                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                                                    <XAxis 
+                                                        dataKey="displayDate" 
+                                                        tick={{ fontSize: 9, fill: '#9ca3af' }}
+                                                        axisLine={false}
+                                                        tickLine={false}
+                                                    />
+                                                    <YAxis 
+                                                        tick={{ fontSize: 9, fill: '#9ca3af' }}
+                                                        axisLine={false}
+                                                        tickLine={false}
+                                                        width={30}
+                                                    />
+                                                    <Tooltip 
+                                                        cursor={{ fill: '#f9fafb' }}
+                                                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 2px 4px -1px rgb(0 0 0 / 0.1)', fontSize: '10px' }}
+                                                        labelFormatter={(value, props) => {
+                                                            const entry = props && props.length > 0 ? props[0].payload : null;
+                                                            if (entry) {
+                                                                return `${entry.date.replace(/-/g, '/')} (${format(new Date(entry.date), 'E', { locale: ja })})`;
+                                                            }
+                                                            return value;
+                                                        }}
+                                                        formatter={(value) => [`${value} 分`, '散歩時間']}
+                                                    />
+                                                    <Bar dataKey="exercise_duration" radius={[2, 2, 0, 0]}>
+                                                        {getWeeklyExerciseData(activePet.health_logs).map((entry, index) => (
+                                                            <Cell key={`cell-${index}`} fill={entry.exercise_duration > 0 ? '#10b981' : '#e5e7eb'} />
+                                                        ))}
+                                                    </Bar>
+                                                </BarChart>
+                                            </ResponsiveContainer>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                                    {/* 重要なお知らせ */}
+                                    <div className="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex flex-col">
+                                        <h3 className="text-xs font-bold mb-2 flex items-center text-gray-800">
+                                            <Bell className="h-3.5 w-3.5 mr-1.5 text-amber-500" />
                                             重要なお知らせ
                                         </h3>
-                                        <div className="space-y-4">
+                                        <div className="space-y-2 flex-1">
                                             {activePet.medical_events.length > 0 ? (
                                                 activePet.medical_events.map((event: any) => (
-                                                    <div key={event.id} className="flex items-start p-4 bg-amber-50 rounded-xl border border-amber-100">
-                                                        <Calendar className="h-5 w-5 text-amber-600 mr-3 mt-0.5" />
+                                                    <div key={event.id} className="flex items-start p-2 bg-amber-50 rounded-lg border border-amber-100">
+                                                        <Calendar className="h-3 w-3 text-amber-600 mr-2 mt-0.5" />
                                                         <div>
-                                                            <p className="text-sm font-bold text-amber-900">{event.title}</p>
-                                                            <p className="text-xs text-amber-700 font-medium">予定日: {format(new Date(event.event_date), 'yyyy/MM/dd')}</p>
+                                                            <p className="text-[11px] font-bold text-amber-900 leading-tight">{event.title}</p>
+                                                            <p className="text-[9px] text-amber-700 font-medium">予定日: {format(new Date(event.event_date), 'yyyy/MM/dd')}</p>
                                                         </div>
                                                     </div>
                                                 ))
                                             ) : (
-                                                <p className="text-sm text-gray-400 text-center py-6 italic">予定はありません</p>
+                                                <p className="text-[10px] text-gray-400 text-center py-2 italic">予定はありません</p>
                                             )}
                                         </div>
+                                    </div>
 
-                                        {/* AI診断要約 */}
-                                        {activePet.ai_diagnoses && activePet.ai_diagnoses.length > 0 && (
-                                            <div className="mt-8 pt-8 border-t border-gray-50">
-                                                <h3 className="text-lg font-bold mb-4 flex items-center text-gray-800">
-                                                    <HeartPulse className="h-5 w-5 mr-2 text-rose-500" />
-                                                    最新のAI診断
-                                                </h3>
-                                                <div className="p-4 bg-rose-50 rounded-2xl border border-rose-100">
-                                                    <div className="flex items-center text-[10px] font-bold text-rose-400 uppercase tracking-wider mb-2">
-                                                        <Calendar className="h-3 w-3 mr-1" />
+                                    {/* AI診断要約 */}
+                                    <div className="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex flex-col">
+                                        <h3 className="text-xs font-bold mb-2 flex items-center text-gray-800">
+                                            <HeartPulse className="h-3.5 w-3.5 mr-1.5 text-rose-500" />
+                                            最新のAI診断
+                                        </h3>
+                                        <div className="flex-1 flex flex-col">
+                                            {activePet.ai_diagnoses && activePet.ai_diagnoses.length > 0 ? (
+                                                <div className="p-2 bg-rose-50 rounded-lg border border-rose-100 flex-1 flex flex-col">
+                                                    <div className="flex items-center text-[9px] font-bold text-rose-400 uppercase tracking-wider mb-1">
+                                                        <Calendar className="h-2 w-2 mr-1" />
                                                         {format(new Date(activePet.ai_diagnoses[0].created_at), 'yyyy/MM/dd')}
                                                     </div>
-                                                    <p className="text-sm text-gray-700 line-clamp-3 leading-relaxed font-medium">
+                                                    <p className="text-[10px] text-gray-700 line-clamp-3 leading-tight font-medium flex-1">
                                                         {activePet.ai_diagnoses[0].result_text.replace(/#|【|】/g, '').split('\n').filter((l: string) => l.trim().length > 0).join(' ')}
                                                     </p>
                                                     <Link 
                                                         href={`/pets/${activePet.id}/history`}
-                                                        className="mt-3 text-xs font-bold text-rose-600 hover:text-rose-700 flex items-center justify-end"
+                                                        className="mt-1 text-[9px] font-bold text-rose-600 hover:text-rose-700 flex items-center justify-end"
                                                     >
                                                         履歴を表示 →
                                                     </Link>
                                                 </div>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* 最近の健康記録 */}
-                                    <div className="lg:col-span-3">
-                                        <div className="flex items-center justify-between mb-4">
-                                            <h3 className="text-lg font-bold flex items-center text-gray-800">
-                                                <ClipboardList className={`h-5 w-5 mr-2 ${theme.text}`} />
-                                                最近の健康記録
-                                            </h3>
+                                            ) : (
+                                                <div className="flex-1 flex flex-col items-center justify-center py-2">
+                                                    <p className="text-[10px] text-gray-400 italic mb-1.5">まだ診断記録がありません</p>
+                                                    <Link 
+                                                        href={`/pets/${activePet.id}/ai-diagnose`}
+                                                        className={`px-2 py-1 text-[9px] text-white rounded-lg font-bold transition-all ${theme.bg} ${theme.hover}`}
+                                                    >
+                                                        AI診断を試す
+                                                    </Link>
+                                                </div>
+                                            )}
                                         </div>
-                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                                    </div>
+                                </div>
+
+                                {/* 最近の健康記録 */}
+                                <div className="lg:col-span-2">
+                                    <div className="flex items-center justify-between mb-2 mt-1">
+                                        <h3 className="text-xs font-bold flex items-center text-gray-800">
+                                            <ClipboardList className={`h-3.5 w-3.5 mr-1.5 ${theme.text}`} />
+                                            最近の健康記録
+                                        </h3>
+                                    </div>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
                                             {activePet.health_logs && activePet.health_logs.length > 0 ? (
                                                 activePet.health_logs.slice(0, 5).map((log: any) => (
-                                                    <div key={log.id} className="p-4 bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:border-indigo-100 transition-all">
-                                                        <div className="text-[10px] font-extrabold text-gray-400 mb-3 border-b border-gray-50 pb-2 uppercase tracking-tighter">
+                                                    <div key={log.id} className="p-3 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md hover:border-indigo-100 transition-all">
+                                                        <div className="text-[9px] font-extrabold text-gray-400 mb-2 border-b border-gray-50 pb-1.5 uppercase tracking-tighter">
                                                             {format(new Date(log.logged_at), 'yyyy/MM/dd')}
                                                         </div>
-                                                        <div className="space-y-3">
+                                                        <div className="space-y-2">
                                                             {log.meal_amount && (
-                                                                <div className="flex items-center text-xs font-bold text-gray-600">
-                                                                    <Utensils className="h-3.5 w-3.5 mr-2 text-orange-400" />
+                                                                <div className="flex items-center text-[11px] font-bold text-gray-600">
+                                                                    <Utensils className="h-3 w-3 mr-1.5 text-orange-400" />
                                                                     {log.meal_amount}g
                                                                 </div>
                                                             )}
                                                             {log.weight && (
-                                                                <div className="flex items-center text-xs font-bold text-gray-600">
-                                                                    <Scale className="h-3.5 w-3.5 mr-2 text-blue-400" />
+                                                                <div className="flex items-center text-[11px] font-bold text-gray-600">
+                                                                    <Scale className="h-3 w-3 mr-1.5 text-blue-400" />
                                                                     {log.weight}kg
                                                                 </div>
                                                             )}
                                                             {log.exercise_duration && (
-                                                                <div className="flex items-center text-xs font-bold text-gray-600">
-                                                                    <Activity className="h-3.5 w-3.5 mr-2 text-green-400" />
+                                                                <div className="flex items-center text-[11px] font-bold text-gray-600">
+                                                                    <Activity className="h-3 w-3 mr-1.5 text-green-400" />
                                                                     {log.exercise_duration}分
                                                                 </div>
                                                             )}
-                                                            <div className="flex flex-wrap gap-1.5 mt-2">
-                                                                <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black ${log.stool_status === '普通' ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'}`}>
+                                                            <div className="flex flex-wrap gap-1 mt-1">
+                                                                <span className={`px-1.5 py-0.5 rounded text-[9px] font-black ${log.stool_status === '普通' ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'}`}>
                                                                     便:{log.stool_status}
                                                                 </span>
-                                                                <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black ${log.urine_status === '普通' ? 'bg-blue-50 text-blue-600' : 'bg-amber-50 text-amber-600'}`}>
+                                                                <span className={`px-1.5 py-0.5 rounded text-[9px] font-black ${log.urine_status === '普通' ? 'bg-blue-50 text-blue-600' : 'bg-amber-50 text-amber-600'}`}>
                                                                     尿:{log.urine_status}
                                                                 </span>
                                                             </div>
@@ -360,13 +481,12 @@ const Dashboard = () => {
                                                     </div>
                                                 ))
                                             ) : (
-                                                <div className="col-span-full py-12 bg-white rounded-2xl border border-dashed border-gray-200 text-center text-gray-400 text-sm font-medium">
+                                                <div className="col-span-full py-8 bg-white rounded-xl border border-dashed border-gray-200 text-center text-gray-400 text-xs font-medium">
                                                     健康記録がまだありません
                                                 </div>
                                             )}
                                         </div>
                                     </div>
-                                </div>
                             </div>
                         )}
                     </div>
