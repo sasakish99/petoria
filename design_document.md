@@ -29,11 +29,37 @@
 | user_id | foreignId | users.id への外部参照 |
 | name | string | ペットの名前 |
 | species | string | 種類（犬、猫など） |
+| breed_id | foreignId | breeds.id への外部参照 (nullable) |
 | birthday | date | 生年月日 (nullable) |
 | target_weight | decimal | 目標体重 (nullable) |
+| image_path | string | ペット画像パス (nullable) |
+| theme_color | string | テーマカラー (nullable) |
+| last_vaccination_date | date | 最終ワクチン接種日 (nullable) |
 | timestamps | - | 作成・更新日時 |
 
-### weight_logs (体重記録)
+### breeds (品種)
+| カラム名 | 型 | 説明 |
+| :--- | :--- | :--- |
+| id | bigint | プライマリキー |
+| name | string | 品種名 |
+| species | string | 種類（dog, cat） |
+| timestamps | - | 作成・更新日時 |
+
+### health_logs (健康記録)
+| カラム名 | 型 | 説明 |
+| :--- | :--- | :--- |
+| id | bigint | プライマリキー |
+| pet_id | foreignId | pets.id への外部参照 |
+| weight | decimal | 体重 (kg) (nullable) |
+| meal_amount | integer | 食事量 (nullable) |
+| stool_status | string | 便の状態 (nullable) |
+| urine_status | string | 尿の状態 (nullable) |
+| exercise_duration | integer | 散歩・運動時間 (分) (nullable) |
+| memo | text | メモ (nullable) |
+| logged_at | date | 記録日 |
+| timestamps | - | 作成・更新日時 |
+
+### weight_logs (体重記録 - 旧形式/移行中)
 | カラム名 | 型 | 説明 |
 | :--- | :--- | :--- |
 | id | bigint | プライマリキー |
@@ -94,6 +120,7 @@
 - ログイン後のメイン画面。
 - **ペット切り替え**: 複数飼育に対応し、スクロールで各ペットの状態を表示。
 - **体重推移グラフ**: Recharts を使用した折れ線グラフ。
+- **散歩時間グラフ**: Recharts を使用した棒グラフ。1週間の合計時間（分/週）と1日の平均時間（分/日）を表示。
 - **お知らせ**: 期限が近い、または過ぎている医療予定を表示。
 - **クイックアクション**: 記録追加、AI診断（予定）への導線。
 
