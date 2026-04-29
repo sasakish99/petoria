@@ -279,7 +279,7 @@ const Dashboard = () => {
                                             </div>
                                         )}
                                     </div>
-                                    <div className="flex flex-wrap items-center gap-2">
+                                    <div className="flex flex-wrap items-center justify-end gap-2">
                                         {latestWeight && (
                                             <div className="flex sm:hidden items-center bg-white px-2 py-1.5 rounded-lg border border-gray-100 shadow-sm mr-auto">
                                                 <span className="text-xs font-bold text-gray-700">{latestWeight}kg</span>
@@ -290,7 +290,7 @@ const Dashboard = () => {
                                                 )}
                                             </div>
                                         )}
-                                        <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0 scrollbar-hide">
+                                        <div className="flex items-center justify-end gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0 scrollbar-hide">
                                             <Link 
                                                 href={`/pets/${activePet.id}/edit`}
                                                 className="flex-shrink-0 px-3 py-2 text-[11px] sm:text-xs bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 transition-all text-gray-600 font-bold flex items-center"
