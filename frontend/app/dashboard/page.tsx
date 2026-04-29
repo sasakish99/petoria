@@ -17,7 +17,19 @@ import {
   Cell,
   ReferenceLine
 } from 'recharts';
-import { Calendar, Bell, PlusCircle, Activity, ClipboardList, HeartPulse, Utensils, Scale, CloudSun } from 'lucide-react';
+import { 
+    Calendar, 
+    Bell, 
+    PlusCircle, 
+    Activity, 
+    ClipboardList, 
+    HeartPulse, 
+    Utensils, 
+    Scale, 
+    CloudSun,
+    MapPin,
+    Navigation
+} from 'lucide-react';
 import { format, differenceInYears, differenceInMonths, subDays, isSameDay, parseISO } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import Link from 'next/link';
@@ -673,10 +685,72 @@ const Dashboard = () => {
                                             )}
                                         </div>
                                     </div>
-                            </div>
-                        )}
-                    </div>
-                </main>
+
+                                    {/* 近くの動物病院 */}
+                                    {dashboardData.hospitals && dashboardData.hospitals.length > 0 && (
+                                        <div className="lg:col-span-2">
+                                            <div className="flex items-center justify-between mb-2 mt-1">
+                                                <h3 className="text-xs font-bold flex items-center text-gray-800">
+                                                    <MapPin className="h-3.5 w-3.5 mr-1.5 text-rose-500" />
+                                                    近くの動物病院
+                                                </h3>
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                                {dashboardData.hospitals.map((hospital: any, idx: number) => (
+                                                    <a 
+                                                        key={idx}
+                                                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(hospital.name)}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="p-3 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md hover:border-rose-100 transition-all flex flex-col group"
+                                                    >
+                                                        <div className="flex items-center justify-between mb-1">
+                                                            <span className="text-[11px] font-bold text-gray-800 line-clamp-1 group-hover:text-rose-600 transition-colors">
+                                                                {hospital.name}
+                                                            </span>
+                                                            <div className="flex items-center gap-1.5 ml-2">
+                                                                {hospital.open_now !== null && (
+                                                                    <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold ${hospital.open_now ? 'bg-green-50 text-green-600' : 'bg-gray-50 text-gray-400'}`}>
+                                                                        {hospital.open_now ? '営業中' : '営業時間外'}
+                                                                    </span>
+                                                                )}
+                                                                <span className="text-[10px] font-black text-rose-500 whitespace-nowrap">
+                                                                    {hospital.distance}km
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-[9px] text-gray-400 line-clamp-2 leading-tight flex-1">
+                                                            {hospital.display_name}
+                                                        </div>
+                                                        {hospital.opening_hours && (
+                                                            <div className="mt-2 pt-2 border-t border-gray-50 space-y-0.5">
+                                                                {hospital.opening_hours.map((text: string, i: number) => {
+                                                                    // 今日の曜日が含まれているか判定
+                                                                    const days = ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日'];
+                                                                    const todayName = days[new Date().getDay()];
+                                                                    const isToday = text.startsWith(todayName);
+                                                                    
+                                                                    return (
+                                                                        <div key={i} className={`text-[9px] leading-tight ${isToday ? 'text-rose-600 font-bold' : 'text-gray-500'}`}>
+                                                                            {text}
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        )}
+                                                        <div className="mt-2 flex items-center justify-end text-[9px] font-bold text-gray-400 group-hover:text-rose-500">
+                                                            <Navigation className="h-2.5 w-2.5 mr-1" />
+                                                            ルートを検索
+                                                        </div>
+                                                    </a>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </main>
             </div>
 
             {/* モーダル */}

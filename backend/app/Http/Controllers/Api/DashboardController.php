@@ -17,6 +17,9 @@ class DashboardController extends Controller
         // 天気情報の取得
         $weather = $this->getWeather($user);
 
+        // 近くの動物病院の取得
+        $hospitals = $this->getNearbyHospitals($user);
+
         $pets = $user->pets()
             ->with(['breed', 'healthLogs' => function($query) {
                 $query->orderBy('logged_at', 'desc')->take(30);
@@ -127,7 +130,8 @@ class DashboardController extends Controller
 
         return response()->json([
             'pets' => $pets,
-            'weather' => $weather
+            'weather' => $weather,
+            'hospitals' => $hospitals
         ]);
     }
 
@@ -222,5 +226,108 @@ class DashboardController extends Controller
                 return null;
             }
         });
+    }
+
+    private function getNearbyHospitals($user)
+    {
+        $address = $user->address;
+        if (!$address) {
+            return null;
+        }
+
+        return Cache::remember('hospitals_' . md5($address), 86400, function () use ($address) {
+            try {
+                $apiKey = config('services.google.maps_api_key');
+
+                if (!$apiKey) {
+                    \Log::warning('Google Maps API Key is not set.');
+                    return null;
+                }
+
+                // 1. 住所から緯度経度を取得 (Google Geocoding API)
+                $geoResponse = Http::get('https://maps.googleapis.com/maps/api/geocode/json', [
+                    'address' => $address,
+                    'key' => $apiKey,
+                    'language' => 'ja'
+                ]);
+
+                if (!$geoResponse->successful() || empty($geoResponse->json()['results'])) {
+                    return null;
+                }
+
+                $location = $geoResponse->json()['results'][0]['geometry']['location'];
+                $lat = $location['lat'];
+                $lng = $location['lng'];
+
+                // 2. 近くの動物病院を検索 (Google Places API - Nearby Search)
+                // 半径10km以内の動物病院を検索
+                $placesResponse = Http::get('https://maps.googleapis.com/maps/api/place/nearbysearch/json', [
+                    'location' => "{$lat},{$lng}",
+                    'radius' => 10000,
+                    'type' => 'veterinary_care',
+                    'key' => $apiKey,
+                    'language' => 'ja'
+                ]);
+
+                if (!$placesResponse->successful()) {
+                    return null;
+                }
+
+                $hospitals = [];
+                $results = $placesResponse->json()['results'] ?? [];
+
+                foreach ($results as $item) {
+                    $itemLat = $item['geometry']['location']['lat'];
+                    $itemLng = $item['geometry']['location']['lng'];
+                    $placeId = $item['place_id'] ?? null;
+                    $openingHours = null;
+
+                    // 詳細情報を取得して営業時間を取得
+                    if ($placeId) {
+                        $detailResponse = Http::get('https://maps.googleapis.com/maps/api/place/details/json', [
+                            'place_id' => $placeId,
+                            'fields' => 'opening_hours',
+                            'key' => $apiKey,
+                            'language' => 'ja'
+                        ]);
+                        if ($detailResponse->successful()) {
+                            $openingHours = $detailResponse->json()['result']['opening_hours']['weekday_text'] ?? null;
+                        }
+                    }
+
+                    $hospitals[] = [
+                        'name' => $item['name'],
+                        'display_name' => $item['vicinity'] ?? $item['name'],
+                        'lat' => $itemLat,
+                        'lon' => $itemLng,
+                        'open_now' => $item['opening_hours']['open_now'] ?? null,
+                        'opening_hours' => $openingHours,
+                        // 距離の簡易計算 (km)
+                        'distance' => $this->calculateDistance($lat, $lng, $itemLat, $itemLng)
+                    ];
+                }
+
+                // 距離順にソート (Google APIの結果もある程度ソートされているが、独自に再計算した距離でソート)
+                usort($hospitals, function($a, $b) {
+                    return $a['distance'] <=> $b['distance'];
+                });
+
+                return $hospitals;
+
+            } catch (\Exception $e) {
+                \Log::error('Hospital Search API Error: ' . $e->getMessage());
+                return null;
+            }
+        });
+    }
+
+    private function calculateDistance($lat1, $lon1, $lat2, $lon2)
+    {
+        $theta = $lon1 - $lon2;
+        $dist = sin(deg2rad($lat1)) * sin(deg2rad($lat2)) +  cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * cos(deg2rad($theta));
+        $dist = acos($dist);
+        $dist = rad2deg($dist);
+        $miles = $dist * 60 * 1.1515;
+        return round($miles * 1.609344, 2);
     }
 }
