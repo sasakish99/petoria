@@ -284,7 +284,7 @@ const Dashboard = () => {
                                             href={`/pets/${activePet.id}/edit`}
                                             className="px-3.5 py-2 text-xs bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 transition-all text-gray-600 font-bold flex items-center"
                                         >
-                                            編集
+                                            プロフィール編集
                                         </Link>
                                         <button 
                                             onClick={() => setSelectedPetForLog(activePet)}
@@ -297,7 +297,7 @@ const Dashboard = () => {
                                             href={`/pets/${activePet.id}/ai-diagnose`}
                                             className={`px-3.5 py-2 text-xs text-white rounded-lg shadow-md transition-all font-bold flex items-center ${theme.bg} ${theme.hover}`}
                                         >
-                                            AI診断
+                                            AI健康診断
                                         </Link>
                                         <Link 
                                             href={`/pets/${activePet.id}/history`}
