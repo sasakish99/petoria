@@ -344,24 +344,51 @@ const Dashboard = () => {
                                                             
                                                             {/* 今日の時間別予報 */}
                                                             {i === 0 && f.hourly && (
-                                                                <div className="mt-3 pt-3 border-t border-gray-200 overflow-x-auto scrollbar-hide">
-                                                                    <div className="flex justify-between min-w-max pb-1 gap-4">
-                                                                        {f.hourly.map((h: any) => (
-                                                                            <div key={h.time} className="flex flex-col items-center space-y-1 px-1">
-                                                                                <span className="text-[10px] text-gray-400 font-medium">
-                                                                                    {format(parseISO(h.time), 'H')}時
-                                                                                </span>
-                                                                                <span className="text-lg leading-none">
-                                                                                    {getWeatherIcon(h.weather_code)}
-                                                                                </span>
-                                                                                <span className="text-xs font-bold text-gray-700">
-                                                                                    {Math.round(h.temp)}°
-                                                                                </span>
-                                                                                <span className="text-[9px] text-blue-400 font-bold">
-                                                                                    {h.precipitation_probability}%
-                                                                                </span>
-                                                                            </div>
-                                                                        ))}
+                                                                <div className="mt-3 pt-3 border-t border-gray-200">
+                                                                    <div className="flex items-center justify-between mb-2">
+                                                                        <span className="text-[10px] font-bold text-gray-500 flex items-center">
+                                                                            <span className="w-2 h-2 rounded-full bg-green-500 mr-1"></span>
+                                                                            お散歩最適ゾーン（気温25℃以下・雨なし）
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className="overflow-x-auto scrollbar-hide">
+                                                                        <div className="flex pb-1 gap-0">
+                                                                            {f.hourly.map((h: any, idx: number) => {
+                                                                                const isOptimal = h.temp <= 25 && h.weather_code <= 3;
+                                                                                const prevOptimal = idx > 0 && f.hourly[idx - 1].temp <= 25 && f.hourly[idx - 1].weather_code <= 3;
+                                                                                const nextOptimal = idx < f.hourly.length - 1 && f.hourly[idx + 1].temp <= 25 && f.hourly[idx + 1].weather_code <= 3;
+
+                                                                                return (
+                                                                                    <div 
+                                                                                        key={h.time} 
+                                                                                        className={`flex flex-col items-center space-y-0.5 px-0.5 py-1 transition-all flex-1 min-w-[1.4rem] ${
+                                                                                            isOptimal 
+                                                                                                ? 'bg-green-50 border-y-2 border-green-500 shadow-sm relative z-10' 
+                                                                                                : 'opacity-70'
+                                                                                        } ${
+                                                                                            isOptimal && !prevOptimal ? 'border-l-2 rounded-l-md' : ''
+                                                                                        } ${
+                                                                                            isOptimal && !nextOptimal ? 'border-r-2 rounded-r-md' : ''
+                                                                                        } ${
+                                                                                            isOptimal && prevOptimal ? '-ml-[2px]' : ''
+                                                                                        }`}
+                                                                                    >
+                                                                                        <span className="text-[11px] text-gray-400 font-bold">
+                                                                                           {format(parseISO(h.time), 'H')}
+                                                                                        </span>
+                                                                                        <span className="text-lg leading-none">
+                                                                                           {getWeatherIcon(h.weather_code)}
+                                                                                        </span>
+                                                                                        <span className={`text-[11px] font-black leading-none ${h.temp > 25 ? 'text-orange-500' : 'text-gray-700'}`}>
+                                                                                           {Math.round(h.temp)}°
+                                                                                        </span>
+                                                                                        <span className={`text-[9px] font-black leading-none ${h.precipitation_probability > 30 ? 'text-blue-500' : 'text-blue-300'}`}>
+                                                                                           {h.precipitation_probability}%
+                                                                                        </span>
+                                                                                    </div>
+                                                                                );
+                                                                            })}
+                                                                        </div>
                                                                     </div>
                                                                 </div>
                                                             )}
