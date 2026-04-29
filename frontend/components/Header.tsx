@@ -14,20 +14,20 @@ const Header = () => {
                 <div className="flex h-16 items-center justify-between">
                     <div className="flex-shrink-0">
                         <Link href="/dashboard" className="flex items-center">
-                            <img src="/logo.png" alt="Petoria Logo" className="h-16 w-auto mr-2" />
-                            <span className="text-2xl font-bold text-gray-900">Petoria</span>
+                            <img src="/logo.png" alt="Petoria Logo" className="h-10 sm:h-16 w-auto mr-1 sm:mr-2" />
+                            <span className="text-xl sm:text-2xl font-bold text-gray-900">Petoria</span>
                         </Link>
                     </div>
-                    <div className="flex items-center space-x-6">
+                    <div className="flex items-center space-x-3 sm:space-x-6">
                         <Link 
                             href="/profile"
-                            className="text-sm font-medium text-gray-600 hover:text-indigo-600 transition-colors"
+                            className="text-xs sm:text-sm font-medium text-gray-600 hover:text-indigo-600 transition-colors truncate max-w-[100px] sm:max-w-none"
                         >
-                            {user.name} さん
+                            {user.name} <span className="hidden sm:inline">さん</span>
                         </Link>
                         <button
                             onClick={logout}
-                            className="text-sm font-medium text-gray-600 hover:text-indigo-600 transition-colors"
+                            className="text-xs sm:text-sm font-medium text-gray-600 hover:text-indigo-600 transition-colors"
                         >
                             ログアウト
                         </button>

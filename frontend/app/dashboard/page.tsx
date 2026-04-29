@@ -226,9 +226,9 @@ const Dashboard = () => {
                                                     pet.name.substring(0, 1)
                                                 )}
                                             </div>
-                                            <span className="text-xs font-bold">{pet.name}</span>
+                                            <span className="text-[11px] font-bold truncate max-w-[60px] text-center">{pet.name}</span>
                                             {pet.birthday && (
-                                                <span className="text-[10px] opacity-70 whitespace-nowrap">
+                                                <span className="text-[9px] opacity-70 whitespace-nowrap">
                                                     {calculateAge(pet.birthday)}
                                                 </span>
                                             )}
@@ -242,7 +242,7 @@ const Dashboard = () => {
                                     <div className="h-14 w-14 rounded-full flex items-center justify-center bg-gray-100 border-2 border-dashed border-gray-300">
                                         <PlusCircle className="h-6 w-6" />
                                     </div>
-                                    <span className="text-xs font-bold">追加</span>
+                                    <span className="text-[11px] font-bold">追加</span>
                                 </Link>
                             </div>
                         )}
@@ -260,15 +260,15 @@ const Dashboard = () => {
                             </div>
                         ) : (
                             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-baseline gap-2">
-                                        <h2 className="text-xl font-extrabold text-gray-900 leading-tight">{activePet.name}</h2>
-                                        <p className="text-xs text-gray-500">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                    <div className="flex items-baseline gap-2 min-w-0">
+                                        <h2 className="text-xl font-extrabold text-gray-900 leading-tight truncate">{activePet.name}</h2>
+                                        <p className="text-xs text-gray-500 truncate">
                                             {activePet.breed?.name ?? ''}
                                             {activePet.birthday && ` • ${calculateAge(activePet.birthday)}`}
                                         </p>
                                         {latestWeight && (
-                                            <div className="flex items-center ml-2 bg-white px-2 py-0.5 rounded-full border border-gray-100 shadow-sm">
+                                            <div className="hidden sm:flex items-center ml-2 bg-white px-2 py-0.5 rounded-full border border-gray-100 shadow-sm">
                                                 <span className="text-xs font-bold text-gray-700">{latestWeight}kg</span>
                                                 {weightDiff !== null && (
                                                     <span className={`text-[10px] font-black ml-1.5 ${weightDiff > 0 ? 'text-rose-500' : weightDiff < 0 ? 'text-emerald-500' : 'text-gray-400'}`}>
@@ -279,32 +279,44 @@ const Dashboard = () => {
                                             </div>
                                         )}
                                     </div>
-                                    <div className="flex space-x-2">
-                                        <Link 
-                                            href={`/pets/${activePet.id}/edit`}
-                                            className="px-3.5 py-2 text-xs bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 transition-all text-gray-600 font-bold flex items-center"
-                                        >
-                                            プロフィール編集
-                                        </Link>
-                                        <button 
-                                            onClick={() => setSelectedPetForLog(activePet)}
-                                            className={`px-3.5 py-2 text-xs bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 transition-all flex items-center font-bold ${theme.text}`}
-                                        >
-                                            <PlusCircle className="h-4 w-4 mr-1.5" />
-                                            記録
-                                        </button>
-                                        <Link 
-                                            href={`/pets/${activePet.id}/ai-diagnose`}
-                                            className={`px-3.5 py-2 text-xs text-white rounded-lg shadow-md transition-all font-bold flex items-center ${theme.bg} ${theme.hover}`}
-                                        >
-                                            AI健康診断
-                                        </Link>
-                                        <Link 
-                                            href={`/pets/${activePet.id}/history`}
-                                            className="px-3.5 py-2 text-xs bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 transition-all text-gray-600 font-bold flex items-center"
-                                        >
-                                            履歴
-                                        </Link>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        {latestWeight && (
+                                            <div className="flex sm:hidden items-center bg-white px-2 py-1.5 rounded-lg border border-gray-100 shadow-sm mr-auto">
+                                                <span className="text-xs font-bold text-gray-700">{latestWeight}kg</span>
+                                                {weightDiff !== null && (
+                                                    <span className={`text-[10px] font-black ml-1.5 ${weightDiff > 0 ? 'text-rose-500' : weightDiff < 0 ? 'text-emerald-500' : 'text-gray-400'}`}>
+                                                        {weightDiff > 0 ? `+${weightDiff.toFixed(2)}` : weightDiff.toFixed(2)}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        )}
+                                        <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0 scrollbar-hide">
+                                            <Link 
+                                                href={`/pets/${activePet.id}/edit`}
+                                                className="flex-shrink-0 px-3 py-2 text-[11px] sm:text-xs bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 transition-all text-gray-600 font-bold flex items-center"
+                                            >
+                                                編集
+                                            </Link>
+                                            <button 
+                                                onClick={() => setSelectedPetForLog(activePet)}
+                                                className={`flex-shrink-0 px-3 py-2 text-[11px] sm:text-xs bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 transition-all flex items-center font-bold ${theme.text}`}
+                                            >
+                                                <PlusCircle className="h-3.5 w-3.5 mr-1" />
+                                                記録
+                                            </button>
+                                            <Link 
+                                                href={`/pets/${activePet.id}/ai-diagnose`}
+                                                className={`flex-shrink-0 px-3 py-2 text-[11px] sm:text-xs text-white rounded-lg shadow-md transition-all font-bold flex items-center ${theme.bg} ${theme.hover}`}
+                                            >
+                                                AI健康診断
+                                            </Link>
+                                            <Link 
+                                                href={`/pets/${activePet.id}/history`}
+                                                className="flex-shrink-0 px-3 py-2 text-[11px] sm:text-xs bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 transition-all text-gray-600 font-bold flex items-center"
+                                            >
+                                                履歴
+                                            </Link>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -313,8 +325,8 @@ const Dashboard = () => {
                                     {dashboardData.weather && (
                                         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 lg:col-span-2">
                                             <div className="flex items-center justify-between mb-3">
-                                                <h3 className="text-sm font-bold flex items-center text-gray-800">
-                                                    <CloudSun className="h-4 w-4 mr-1.5 text-blue-500" />
+                                                <h3 className="text-[11px] sm:text-sm font-bold flex items-center text-gray-800">
+                                                    <CloudSun className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-1.5 text-blue-500" />
                                                     お散歩のお天気（{dashboardData.weather.location}）
                                                 </h3>
                                             </div>
@@ -346,9 +358,10 @@ const Dashboard = () => {
                                                             {i === 0 && f.hourly && (
                                                                 <div className="mt-3 pt-3 border-t border-gray-200">
                                                                     <div className="flex items-center justify-between mb-2">
-                                                                        <span className="text-[10px] font-bold text-gray-500 flex items-center">
+                                                                        <span className="text-[9px] sm:text-[10px] font-bold text-gray-500 flex items-center">
                                                                             <span className="w-2 h-2 rounded-full bg-green-500 mr-1"></span>
-                                                                            お散歩最適ゾーン（気温25℃以下・雨なし）
+                                                                            お散歩最適ゾーン
+                                                                            <span className="hidden sm:inline ml-1">（気温25℃以下・雨なし）</span>
                                                                         </span>
                                                                     </div>
                                                                     <div className="overflow-x-auto scrollbar-hide">
@@ -393,7 +406,7 @@ const Dashboard = () => {
                                                                 </div>
                                                             )}
 
-                                                            <p className={`text-xs leading-tight font-medium ${advice.color} sm:hidden block mt-1`}>
+                                                            <p className={`text-[10px] sm:text-xs leading-tight font-medium ${advice.color} sm:hidden block mt-1`}>
                                                                 {advice.text}
                                                             </p>
                                                         </div>
@@ -405,8 +418,8 @@ const Dashboard = () => {
 
                                     {/* 体重グラフ */}
                                     <div className="bg-white p-3 rounded-xl shadow-sm border border-gray-100">
-                                        <h3 className="text-xs font-bold mb-2 flex items-center text-gray-800">
-                                            <Activity className={`h-3.5 w-3.5 mr-1.5 ${theme.text}`} />
+                                        <h3 className="text-[10px] sm:text-xs font-bold mb-2 flex items-center text-gray-800">
+                                            <Activity className={`h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5 ${theme.text}`} />
                                             体重推移 (kg)
                                         </h3>
                                         <div className="h-44 w-full">
