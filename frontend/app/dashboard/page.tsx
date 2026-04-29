@@ -723,7 +723,7 @@ const Dashboard = () => {
                                                             {hospital.display_name}
                                                         </div>
                                                         {hospital.opening_hours && (
-                                                            <div className="mt-2 pt-2 border-t border-gray-50 space-y-0.5">
+                                                            <div className="mt-2 pt-2 border-t border-gray-50 grid grid-cols-2 gap-x-2 gap-y-0.5">
                                                                 {hospital.opening_hours.map((text: string, i: number) => {
                                                                     // 今日の曜日が含まれているか判定
                                                                     const days = ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日'];
