@@ -138,7 +138,8 @@ class DashboardController extends Controller
             return null;
         }
 
-        return Cache::remember('weather_' . $user->id . '_' . md5($address), 3600, function () use ($address) {
+        $date = now()->format('Y-m-d');
+        return Cache::remember('weather_' . $user->id . '_' . $date . '_' . md5($address), 3600, function () use ($address) {
             try {
                 // 1. ジオコーディング (OpenStreetMap Nominatim API)
                 // Nominatimは詳細な住所だとヒットしないことがあるため、都道府県+市区町村で検索する
