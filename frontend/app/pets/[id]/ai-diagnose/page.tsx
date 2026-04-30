@@ -98,45 +98,59 @@ const AiDiagnose = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-12">
-            <nav className="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <div className="min-h-screen bg-slate-50 pb-12">
+            <nav className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-30 shadow-sm">
                 <div className="max-w-3xl mx-auto px-4 h-16 flex items-center">
-                    <button onClick={() => router.back()} className="mr-4 p-2 hover:bg-gray-100 rounded-full">
-                        <ChevronLeft className="h-6 w-6 text-gray-600" />
+                    <button onClick={() => router.back()} className="mr-4 p-2 hover:bg-slate-100 rounded-xl transition-all text-slate-600">
+                        <ChevronLeft className="h-6 w-6" />
                     </button>
-                    <h1 className="text-xl font-bold text-gray-900">{pet.name} のAI健康診断</h1>
+                    <h1 className="text-xl font-black bg-gradient-to-r from-slate-800 to-slate-500 bg-clip-text text-transparent tracking-tight">{pet.name} のAI健康診断</h1>
                     <div className="ml-auto">
                         <Link 
                             href={`/pets/${petId}/history`}
-                            className="text-sm font-medium text-indigo-600 hover:text-indigo-800"
+                            className="text-sm font-bold text-slate-500 hover:text-slate-800 transition-colors"
                         >
-                            履歴を見る
+                            履歴
                         </Link>
                     </div>
                 </div>
             </nav>
 
             <main className="max-w-3xl mx-auto px-4 py-8">
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="bg-white/70 backdrop-blur-lg rounded-3xl shadow-xl shadow-slate-200/50 border border-white overflow-hidden">
                     {!result ? (
-                        <div className="p-6 md:p-8">
-                            <div className="mb-8 text-center">
-                                <p className="text-gray-600">
-                                    うちの子の気になる箇所（皮膚、目、口など）の写真をアップロードしてください。<br />
+                        <div className="p-8">
+                            <div className="mb-10 text-center flex flex-col items-center">
+                                <div className="h-20 w-20 rounded-2xl bg-slate-100 overflow-hidden shadow-inner mb-4">
+                                    {pet.image_path ? (
+                                        <img 
+                                            src={pet.image_path.startsWith('http') ? pet.image_path : `${process.env.NEXT_PUBLIC_BACKEND_URL}/storage/${pet.image_path}`} 
+                                            alt={pet.name} 
+                                            className="h-full w-full object-cover" 
+                                        />
+                                    ) : (
+                                        <div className="h-full w-full flex items-center justify-center text-xl font-bold text-slate-300">
+                                            {pet.name.substring(0, 1)}
+                                        </div>
+                                    )}
+                                </div>
+                                <h2 className="text-xl font-black text-slate-800 tracking-tight">{pet.name} の気になる箇所を解析</h2>
+                                <p className="text-sm text-slate-500 font-medium mt-1">
+                                    皮膚、目、口などの写真をアップロードしてください。<br />
                                     AIが健康状態に関するアドバイスを生成します。
                                 </p>
                             </div>
 
-                            <form onSubmit={handleSubmit} className="space-y-6">
-                                <div className="space-y-2">
-                                    <label htmlFor="target_part" className="block text-sm font-medium text-gray-700">
+                            <form onSubmit={handleSubmit} className="space-y-8">
+                                <div className="space-y-3">
+                                    <label htmlFor="target_part" className="block text-sm font-bold text-slate-700 ml-1">
                                         重点的に診断したい箇所
                                     </label>
                                     <select
                                         id="target_part"
                                         value={targetPart}
                                         onChange={(e) => setTargetPart(e.target.value)}
-                                        className="w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm py-3"
+                                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-slate-400 focus:ring focus:ring-slate-200 focus:ring-opacity-50 transition-all font-bold text-slate-700 outline-none"
                                     >
                                         <option value="overall">全体（おまかせ）</option>
                                         <option value="eyes">目・瞳（充血、にごりなど）</option>
@@ -154,28 +168,30 @@ const AiDiagnose = () => {
                                     onDrop={handleDrop}
                                 >
                                     {preview ? (
-                                        <div className="relative aspect-square w-full max-w-sm mx-auto rounded-2xl overflow-hidden border-2 border-dashed border-gray-200">
+                                        <div className="relative aspect-square w-full max-w-sm mx-auto rounded-3xl overflow-hidden border-2 border-dashed border-slate-200 bg-white shadow-lg shadow-slate-100">
                                             <img src={preview} alt="Preview" className="w-full h-full object-cover" />
                                             <button 
                                                 type="button"
                                                 onClick={() => { setImage(null); setPreview(null); }}
-                                                className="absolute top-2 right-2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70"
+                                                className="absolute top-4 right-4 bg-slate-800/80 backdrop-blur-md text-white p-2 rounded-xl hover:bg-slate-900 transition-all shadow-xl"
                                             >
-                                                <PlusCircle className="h-5 w-5 rotate-45" />
+                                                <X className="h-5 w-5" />
                                             </button>
                                         </div>
                                     ) : (
-                                        <label className={`flex flex-col items-center justify-center aspect-square w-full max-w-sm mx-auto rounded-2xl border-2 border-dashed cursor-pointer transition-all duration-200 ${
+                                        <label className={`flex flex-col items-center justify-center aspect-square w-full max-w-sm mx-auto rounded-3xl border-2 border-dashed cursor-pointer transition-all duration-300 ${
                                             isDragging 
-                                                ? 'border-indigo-500 bg-indigo-50 scale-[1.02]' 
-                                                : 'border-gray-300 bg-gray-50 hover:bg-gray-100'
+                                                ? 'border-slate-400 bg-slate-100 shadow-inner scale-[1.02]' 
+                                                : 'border-slate-200 bg-slate-50/50 hover:bg-slate-50 hover:border-slate-300'
                                         }`}>
-                                            <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                                                <Camera className={`h-12 w-12 mb-3 transition-colors ${isDragging ? 'text-indigo-500' : 'text-gray-400'}`} />
-                                                <p className={`mb-2 text-sm font-semibold transition-colors ${isDragging ? 'text-indigo-600' : 'text-gray-500'}`}>
-                                                    {isDragging ? 'ここにドロップしてアップロード' : 'タップして写真を撮影・選択'}
+                                            <div className="flex flex-col items-center justify-center p-8">
+                                                <div className={`h-16 w-16 rounded-2xl bg-white shadow-sm flex items-center justify-center mb-4 transition-colors ${isDragging ? 'text-slate-600' : 'text-slate-300'}`}>
+                                                    <Camera className="h-8 w-8" />
+                                                </div>
+                                                <p className={`mb-2 text-sm font-black transition-colors ${isDragging ? 'text-slate-800' : 'text-slate-600'}`}>
+                                                    {isDragging ? 'ここにドロップ' : '写真を撮影・選択'}
                                                 </p>
-                                                <p className="text-xs text-gray-400">または画像をドラッグ＆ドロップ</p>
+                                                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">or drag & drop</p>
                                             </div>
                                             <input type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
                                         </label>
@@ -183,16 +199,16 @@ const AiDiagnose = () => {
                                 </div>
 
                                 {error && (
-                                    <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl flex items-start">
-                                        <AlertCircle className="h-5 w-5 mr-3 mt-0.5 flex-shrink-0" />
-                                        <p className="text-sm">{error}</p>
+                                    <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl flex items-start text-rose-700 animate-in fade-in slide-in-from-top-2 duration-300">
+                                        <AlertCircle className="h-5 w-5 mr-3 mt-0.5 shrink-0" />
+                                        <p className="text-sm font-bold leading-relaxed">{error}</p>
                                     </div>
                                 )}
 
                                 <button
                                     type="submit"
                                     disabled={!image || loading}
-                                    className="w-full py-4 bg-indigo-600 text-white rounded-xl font-bold text-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center shadow-lg shadow-indigo-100"
+                                    className="w-full py-4 bg-slate-800 text-white rounded-xl font-black text-lg hover:bg-slate-700 active:bg-slate-900 focus:outline-none focus:ring-4 focus:ring-slate-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center shadow-xl shadow-slate-200"
                                 >
                                     {loading ? (
                                         <>
@@ -200,7 +216,10 @@ const AiDiagnose = () => {
                                             AIが解析中...
                                         </>
                                     ) : (
-                                        'AI健康診断を開始する'
+                                        <>
+                                            <Activity className="h-5 w-5 mr-2" />
+                                            AI健康診断を開始する
+                                        </>
                                     )}
                                 </button>
                             </form>

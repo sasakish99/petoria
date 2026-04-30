@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f8fafc;
+  --foreground: #1e293b;
 }
 
 @theme inline {
@@ -13,6 +13,11 @@
 }
 
 @layer base {
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased;
+    font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  }
+
   input[type="text"],
   input[type="email"],
   input[type="password"],
@@ -20,7 +25,7 @@
   input[type="number"],
   select,
   textarea {
-    @apply py-3 px-4;
+    @apply py-3 px-4 bg-slate-50 border-slate-200 rounded-xl focus:border-slate-400 focus:ring focus:ring-slate-200 focus:ring-opacity-50 transition-all outline-none;
   }
 
   select {

@@ -101,32 +101,34 @@ export default function ProfilePage() {
       <div className="max-w-2xl mx-auto px-4 pt-8">
         <Link
           href="/dashboard"
-          className="inline-flex items-center text-slate-600 hover:text-slate-900 mb-6 transition-colors"
+          className="inline-flex items-center text-slate-500 font-semibold hover:text-slate-800 mb-6 transition-colors"
         >
-          <ArrowLeft className="w-4 h-4 mr-1" />
+          <ArrowLeft className="w-4 h-4 mr-1.5" />
           ダッシュボードに戻る
         </Link>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="p-6 border-b border-slate-100">
-            <h1 className="text-xl font-bold text-slate-900">飼い主情報の設定</h1>
-            <p className="text-sm text-slate-500 mt-1">
+        <div className="bg-white/70 backdrop-blur-lg rounded-3xl shadow-xl shadow-slate-200/50 border border-white overflow-hidden">
+          <div className="p-8 border-b border-slate-100/50 bg-white/50">
+            <h1 className="text-2xl font-black bg-gradient-to-r from-slate-800 to-slate-500 bg-clip-text text-transparent tracking-tight">
+              飼い主情報の設定
+            </h1>
+            <p className="text-sm text-slate-500 font-medium mt-1">
               住所を登録すると、AI診断時に近くの動物病院をご案内できるようになります。
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          <form onSubmit={handleSubmit} className="p-8 space-y-8">
             {message.text && (
-              <div className={`p-4 rounded-xl text-sm ${
+              <div className={`p-4 rounded-2xl text-sm font-medium animate-in fade-in slide-in-from-top-2 duration-300 ${
                 message.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-700 border border-rose-100'
               }`}>
                 {message.text}
               </div>
             )}
 
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5 flex items-center">
+                <label className="block text-sm font-bold text-slate-700 mb-2 ml-1 flex items-center">
                   <User className="w-4 h-4 mr-2 text-slate-400" />
                   お名前
                 </label>
@@ -135,38 +137,38 @@ export default function ProfilePage() {
                   required
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-200 transition-all text-slate-900"
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-slate-400 focus:ring focus:ring-slate-200 focus:ring-opacity-50 transition-all text-slate-900"
                   placeholder="飼い主さんのお名前"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5 flex items-center">
-                  <span className="w-4 h-4 mr-2 text-slate-400">@</span>
+                <label className="block text-sm font-bold text-slate-700 mb-2 ml-1 flex items-center">
+                  <span className="w-4 h-4 mr-2 text-slate-400 flex items-center justify-center font-normal">@</span>
                   メールアドレス
                 </label>
                 <input
                   type="email"
                   disabled
                   value={formData.email}
-                  className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-500 cursor-not-allowed"
+                  className="w-full px-4 py-3 bg-slate-100 border border-slate-200 rounded-xl text-slate-400 cursor-not-allowed font-medium"
                 />
-                <p className="text-[12px] text-slate-400 mt-1.5 ml-1">
+                <p className="text-[12px] text-slate-400 mt-2 ml-1">
                   メールアドレスは変更できません。
                 </p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5 flex items-center">
+                <label className="block text-sm font-bold text-slate-700 mb-2 ml-1 flex items-center">
                   <MapPin className="w-4 h-4 mr-2 text-slate-400" />
                   郵便番号（自動入力）
                 </label>
-                <div className="flex space-x-2">
+                <div className="flex space-x-3">
                   <input
                     type="text"
                     value={formData.zipcode}
                     onChange={(e) => setFormData({ ...formData, zipcode: e.target.value.replace(/[^0-9]/g, '') })}
-                    className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-200 transition-all text-slate-900"
+                    className="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-slate-400 focus:ring focus:ring-slate-200 focus:ring-opacity-50 transition-all text-slate-900"
                     placeholder="7桁の数字（ハイフンなし）"
                     maxLength={7}
                   />
@@ -174,16 +176,16 @@ export default function ProfilePage() {
                     type="button"
                     onClick={handleZipSearch}
                     disabled={searchingZip || formData.zipcode.length < 7}
-                    className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl font-medium hover:bg-slate-200 transition-all flex items-center disabled:opacity-50"
+                    className="px-6 py-3 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200 transition-all flex items-center disabled:opacity-50 shadow-sm border border-slate-200/50"
                   >
-                    {searchingZip ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4 mr-1.5" />}
+                    {searchingZip ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4 mr-2" />}
                     検索
                   </button>
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5 flex items-center">
+                <label className="block text-sm font-bold text-slate-700 mb-2 ml-1 flex items-center">
                   <MapPin className="w-4 h-4 mr-2 text-slate-400" />
                   住所
                 </label>
@@ -191,10 +193,10 @@ export default function ProfilePage() {
                   type="text"
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-200 transition-all text-slate-900"
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-slate-400 focus:ring focus:ring-slate-200 focus:ring-opacity-50 transition-all text-slate-900"
                   placeholder="例: 東京都渋谷区代々木"
                 />
-                <p className="text-[12px] text-slate-400 mt-1.5 ml-1 leading-relaxed">
+                <p className="text-[12px] text-slate-400 mt-2 ml-1 leading-relaxed">
                   市区町村以降の番地や建物名がある場合は、手動で追記してください。
                 </p>
               </div>
@@ -204,7 +206,7 @@ export default function ProfilePage() {
               <button
                 type="submit"
                 disabled={saving}
-                className="w-full flex items-center justify-center px-6 py-3 bg-slate-900 text-white rounded-xl font-medium hover:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-slate-100 transition-all disabled:opacity-50"
+                className="w-full flex items-center justify-center px-6 py-4 bg-slate-800 text-white rounded-xl font-bold hover:bg-slate-700 active:bg-slate-900 focus:outline-none focus:ring-4 focus:ring-slate-200 transition-all duration-200 shadow-lg shadow-slate-200 disabled:opacity-50"
               >
                 {saving ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
