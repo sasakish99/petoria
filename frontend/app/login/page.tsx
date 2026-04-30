@@ -26,7 +26,7 @@ const Login = () => {
         <div className="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-100">
             <div className="w-full sm:max-w-md mt-6 px-6 py-4 bg-white shadow-md overflow-hidden sm:rounded-lg">
                 <div className="flex flex-col items-center mb-6">
-                    <img src="/logo.png" alt="Petoria Logo" className="h-20 w-auto mb-4" />
+                    <img src="/logo.png" alt="Petoria Logo" className="h-48 w-auto mb-4" />
                     <h2 className="text-2xl font-bold text-center text-gray-800">Petoria ログイン</h2>
                 </div>
                 

@@ -122,7 +122,7 @@ const AiDiagnose = () => {
                         <div className="p-6 md:p-8">
                             <div className="mb-8 text-center">
                                 <p className="text-gray-600">
-                                    ペットの気になる箇所（皮膚、目、口など）の写真をアップロードしてください。<br />
+                                    うちの子の気になる箇所（皮膚、目、口など）の写真をアップロードしてください。<br />
                                     AIが健康状態に関するアドバイスを生成します。
                                 </p>
                             </div>

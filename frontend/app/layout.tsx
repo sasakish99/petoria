@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Petoria - ペット健康管理アプリ",
-  description: "大切なペットの健康と成長を家族みんなで見守る、ペット健康管理アプリケーションです。",
+  title: "Petoria - うちの子健康管理アプリ",
+  description: "大切なうちの子の健康と成長を家族みんなで見守る、うちの子健康管理アプリケーションです。",
   icons: {
     icon: "/favicon.ico",
   },

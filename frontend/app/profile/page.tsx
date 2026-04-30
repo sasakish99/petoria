@@ -136,7 +136,7 @@ export default function ProfilePage() {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-200 transition-all text-slate-900"
-                  placeholder="ペットの飼い主さんのお名前"
+                  placeholder="飼い主さんのお名前"
                 />
               </div>
 
