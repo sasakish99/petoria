@@ -14,7 +14,7 @@ const Login = () => {
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [errors, setErrors] = useState([]);
+    const [errors, setErrors] = useState<any>([]);
     const [status, setStatus] = useState(null);
 
     const submitForm = async (event: any) => {
@@ -51,8 +51,8 @@ const Login = () => {
                             required
                             autoFocus
                         />
-                        {errors.email && (
-                            <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+                        {errors && (errors as any).email && (
+                            <p className="text-red-500 text-xs mt-1">{(errors as any).email}</p>
                         )}
                     </div>
 
@@ -70,8 +70,8 @@ const Login = () => {
                             required
                             autoComplete="current-password"
                         />
-                        {errors.password && (
-                            <p className="text-red-500 text-xs mt-1">{errors.password}</p>
+                        {errors && (errors as any).password && (
+                            <p className="text-red-500 text-xs mt-1">{(errors as any).password}</p>
                         )}
                     </div>
 

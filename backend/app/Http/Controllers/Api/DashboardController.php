@@ -235,16 +235,19 @@ class DashboardController extends Controller
             return null;
         }
 
-        return Cache::remember('hospitals_' . md5($address), 86400, function () use ($address) {
-            try {
-                $apiKey = config('services.google.maps_api_key');
+        $cacheKey = 'hospitals_' . md5($address);
 
-                if (!$apiKey) {
-                    \Log::warning('Google Maps API Key is not set.');
-                    return null;
-                }
+        try {
+            $apiKey = config('services.google.maps_api_key');
 
-                // 1. 住所から緯度経度を取得 (Google Geocoding API)
+            if (!$apiKey) {
+                \Log::warning('Google Maps API Key is not set.');
+                return null;
+            }
+
+            // 1. 住所から緯度経度を取得 (Google Geocoding API)
+            // 住所自体は不変なので、ジオコーディング結果は長くキャッシュしても良い
+            $location = Cache::remember('geo_' . md5($address), 86400 * 30, function () use ($address, $apiKey) {
                 $geoResponse = Http::get('https://maps.googleapis.com/maps/api/geocode/json', [
                     'address' => $address,
                     'key' => $apiKey,
@@ -255,12 +258,19 @@ class DashboardController extends Controller
                     return null;
                 }
 
-                $location = $geoResponse->json()['results'][0]['geometry']['location'];
-                $lat = $location['lat'];
-                $lng = $location['lng'];
+                return $geoResponse->json()['results'][0]['geometry']['location'];
+            });
 
-                // 2. 近くの動物病院を検索 (Google Places API - Nearby Search)
-                // 半径10km以内の動物病院を検索
+            if (!$location) {
+                return null;
+            }
+
+            $lat = $location['lat'];
+            $lng = $location['lng'];
+
+            // 2. 近くの動物病院を検索 (Google Places API - Nearby Search)
+            // 営業状態が含まれるため、キャッシュ時間を短くする (例: 10分)
+            return Cache::remember($cacheKey, 600, function () use ($lat, $lng, $apiKey) {
                 $placesResponse = Http::get('https://maps.googleapis.com/maps/api/place/nearbysearch/json', [
                     'location' => "{$lat},{$lng}",
                     'radius' => 10000,
@@ -276,6 +286,7 @@ class DashboardController extends Controller
                 $hospitals = [];
                 $results = $placesResponse->json()['results'] ?? [];
 
+
                 foreach ($results as $item) {
                     $itemLat = $item['geometry']['location']['lat'];
                     $itemLng = $item['geometry']['location']['lng'];
@@ -286,13 +297,20 @@ class DashboardController extends Controller
                     if ($placeId) {
                         $detailResponse = Http::get('https://maps.googleapis.com/maps/api/place/details/json', [
                             'place_id' => $placeId,
-                            'fields' => 'opening_hours',
+                            'fields' => 'opening_hours,formatted_phone_number',
                             'key' => $apiKey,
                             'language' => 'ja'
                         ]);
                         if ($detailResponse->successful()) {
-                            $openingHours = $detailResponse->json()['result']['opening_hours']['weekday_text'] ?? null;
+                            $result = $detailResponse->json()['result'] ?? [];
+                            $openingHours = $result['opening_hours']['weekday_text'] ?? null;
+                            $phoneNumber = $result['formatted_phone_number'] ?? null;
                         }
+                    }
+
+                    // 営業時間のデータが取れない病院は除外する
+                    if (empty($openingHours)) {
+                        continue;
                     }
 
                     $hospitals[] = [
@@ -300,25 +318,81 @@ class DashboardController extends Controller
                         'display_name' => $item['vicinity'] ?? $item['name'],
                         'lat' => $itemLat,
                         'lon' => $itemLng,
-                        'open_now' => $item['opening_hours']['open_now'] ?? null,
+                        'open_now' => $this->isOpenNow($item['opening_hours']['open_now'] ?? null, $openingHours),
                         'opening_hours' => $openingHours,
+                        'phone_number' => $phoneNumber,
+                        'rating' => $item['rating'] ?? null,
+                        'user_ratings_total' => $item['user_ratings_total'] ?? null,
                         // 距離の簡易計算 (km)
                         'distance' => $this->calculateDistance($lat, $lng, $itemLat, $itemLng)
                     ];
                 }
 
-                // 距離順にソート (Google APIの結果もある程度ソートされているが、独自に再計算した距離でソート)
-                usort($hospitals, function($a, $b) {
+                // 距離順にソート
+                usort($hospitals, function ($a, $b) {
                     return $a['distance'] <=> $b['distance'];
                 });
 
                 return $hospitals;
+            });
+        } catch (\Exception $e) {
+            \Log::error('Hospital Search API Error: ' . $e->getMessage());
+            return null;
+        }
+    }
 
-            } catch (\Exception $e) {
-                \Log::error('Hospital Search API Error: ' . $e->getMessage());
-                return null;
+    /**
+     * Google APIのopen_nowとweekday_textを元に、現在営業中かを判定する
+     */
+    private function isOpenNow($googleOpenNow, $weekdayText)
+    {
+        // Googleの判定がある場合は基本的にはそれを採用するが、
+        // ユーザーから「営業時間外」と誤判定される報告があるため、念のためweekday_textでもチェックする
+        if ($googleOpenNow === true) {
+            return true;
+        }
+
+        if (!$weekdayText || !is_array($weekdayText)) {
+            return $googleOpenNow;
+        }
+
+        // 現在の日本時間での曜日と時刻を取得
+        $now = now(); // config/app.php で Asia/Tokyo に設定済み
+        $days = ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日'];
+        $todayName = $days[$now->dayOfWeek];
+
+        foreach ($weekdayText as $line) {
+            if (str_starts_with($line, $todayName)) {
+                // "月曜日: 9時00分～12時00分, 15時00分～19時00分" のような形式を想定
+                if (str_contains($line, '定休日') || str_contains($line, '休み')) {
+                    return false;
+                }
+
+                // 時間部分を抽出
+                $timePart = str_replace($todayName . ': ', '', $line);
+                $periods = explode(', ', $timePart);
+
+                foreach ($periods as $period) {
+                    // "9時00分～19時00分" または "09:00～19:00"
+                    if (preg_match('/(\d{1,2})[時:](\d{2})分?～(\d{1,2})[時:](\d{2})分?/u', $period, $matches)) {
+                        $startHour = (int)$matches[1];
+                        $startMin = (int)$matches[2];
+                        $endHour = (int)$matches[3];
+                        $endMin = (int)$matches[4];
+
+                        $startTime = $now->copy()->setTime($startHour, $startMin);
+                        $endTime = $now->copy()->setTime($endHour, $endMin);
+
+                        if ($now->between($startTime, $endTime)) {
+                            return true;
+                        }
+                    }
+                }
+                break;
             }
-        });
+        }
+
+        return $googleOpenNow;
     }
 
     private function calculateDistance($lat1, $lon1, $lat2, $lon2)

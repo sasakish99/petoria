@@ -28,7 +28,11 @@ import {
     Scale, 
     CloudSun,
     MapPin,
-    Navigation
+    Navigation,
+    Star,
+    ChevronDown,
+    ChevronUp,
+    Phone
 } from 'lucide-react';
 import { format, differenceInYears, differenceInMonths, subDays, isSameDay, parseISO } from 'date-fns';
 import { ja } from 'date-fns/locale';
@@ -40,6 +44,8 @@ const Dashboard = () => {
     const { user, logout } = useAuth({ middleware: 'auth' });
     const [selectedPetForLog, setSelectedPetForLog] = useState<any>(null);
     const [activePetId, setActivePetId] = useState<number | null>(null);
+    const [isHospitalsExpanded, setIsHospitalsExpanded] = useState(false);
+    const [isWeatherExpanded, setIsWeatherExpanded] = useState(false);
 
     // マウント時にlocalStorageから最後に選択したペットIDを復元
     useEffect(() => {
@@ -166,7 +172,7 @@ const Dashboard = () => {
                     <aside className="w-20 md:w-64 bg-white border-r border-gray-200 hidden sm:block flex-shrink-0 pt-4">
                         <div className="p-4 space-y-4">
                             <div className="px-2 pb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider hidden md:block">
-                                ペット
+                                うちの子
                             </div>
                             {dashboardData.pets.map((pet: any) => {
                                 const petTheme = getThemeColors(pet.theme_color || 'indigo');
@@ -208,7 +214,7 @@ const Dashboard = () => {
                                 <div className="h-10 w-10 rounded-full flex-shrink-0 flex items-center justify-center bg-gray-100">
                                     <PlusCircle className="h-5 w-5" />
                                 </div>
-                                <div className="ml-3 text-sm font-medium hidden md:block">ペットを追加</div>
+                                <div className="ml-3 text-sm font-medium hidden md:block">うちの子を追加</div>
                             </Link>
                         </div>
                     </aside>
@@ -264,10 +270,10 @@ const Dashboard = () => {
                                 <div className="mx-auto w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center mb-3">
                                     <PlusCircle className="h-6 w-6 text-indigo-600" />
                                 </div>
-                                <h3 className="text-lg font-medium text-gray-900 mb-1">ペットが登録されていません</h3>
-                                <p className="text-gray-500 mb-4 text-sm">まずは大切なペットのプロフィールを作成しましょう。</p>
+                                <h3 className="text-lg font-medium text-gray-900 mb-1">うちの子が登録されていません</h3>
+                                <p className="text-gray-500 mb-4 text-sm">まずは大切なうちの子のプロフィールを作成しましょう。</p>
                                 <Link href="/pets/create" className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-bold">
-                                    ペットを登録する
+                                    うちの子を登録する
                                 </Link>
                             </div>
                         ) : (
@@ -333,101 +339,6 @@ const Dashboard = () => {
                                 </div>
 
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                                    {/* 天気予報セクション */}
-                                    {dashboardData.weather && (
-                                        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 lg:col-span-2">
-                                            <div className="flex items-center justify-between mb-3">
-                                                <h3 className="text-[11px] sm:text-sm font-bold flex items-center text-gray-800">
-                                                    <CloudSun className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-1.5 text-blue-500" />
-                                                    お散歩のお天気（{dashboardData.weather.location}）
-                                                </h3>
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-3">
-                                                {dashboardData.weather.forecast.map((f: any, i: number) => {
-                                                    const advice = getWeatherAdvice(f.weather_code, f.temp_max);
-                                                    const date = parseISO(f.date);
-                                                    return (
-                                                        <div key={f.date} className={`p-3 rounded-lg border bg-gray-50 border-gray-100 ${i === 0 ? 'col-span-2' : 'col-span-2 sm:col-span-1'}`}>
-                                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2">
-                                                                <span className="text-xs font-bold text-gray-500">
-                                                                    {i === 0 ? '今日' : i === 1 ? '明日' : '明後日'}
-                                                                    <span className="ml-1 md:inline hidden">{format(date, 'MM/dd(E)', { locale: ja })}</span>
-                                                                </span>
-                                                                <div className="flex items-center space-x-2">
-                                                                    <span className="text-xs leading-tight font-medium text-gray-500 sm:block hidden">
-                                                                        {advice.text}
-                                                                    </span>
-                                                                    <span className="text-3xl">{getWeatherIcon(f.weather_code)}</span>
-                                                                </div>
-                                                            </div>
-                                                            <div className="flex items-baseline space-x-1.5 mb-1.5">
-                                                                <span className="text-lg font-bold text-gray-800">{f.temp_max}°</span>
-                                                                <span className="text-xs text-gray-400">{f.temp_min}°</span>
-                                                                <span className="text-xs text-blue-500 ml-auto">{f.precipitation_probability}%</span>
-                                                            </div>
-                                                            
-                                                            {/* 今日の時間別予報 */}
-                                                            {i === 0 && f.hourly && (
-                                                                <div className="mt-3 pt-3 border-t border-gray-200">
-                                                                    <div className="flex items-center justify-between mb-2">
-                                                                        <span className="text-[9px] sm:text-[10px] font-bold text-gray-500 flex items-center">
-                                                                            <span className="w-2 h-2 rounded-full bg-green-500 mr-1"></span>
-                                                                            お散歩最適ゾーン
-                                                                            <span className="hidden sm:inline ml-1">（気温25℃以下・雨なし）</span>
-                                                                        </span>
-                                                                    </div>
-                                                                    <div className="overflow-x-auto scrollbar-hide">
-                                                                        <div className="flex pb-1 gap-0">
-                                                                            {f.hourly.map((h: any, idx: number) => {
-                                                                                const isOptimal = h.temp <= 25 && h.weather_code <= 3;
-                                                                                const prevOptimal = idx > 0 && f.hourly[idx - 1].temp <= 25 && f.hourly[idx - 1].weather_code <= 3;
-                                                                                const nextOptimal = idx < f.hourly.length - 1 && f.hourly[idx + 1].temp <= 25 && f.hourly[idx + 1].weather_code <= 3;
-
-                                                                                return (
-                                                                                    <div 
-                                                                                        key={h.time} 
-                                                                                        className={`flex flex-col items-center space-y-0.5 px-0.5 py-1 transition-all flex-1 min-w-[1.4rem] ${
-                                                                                            isOptimal 
-                                                                                                ? 'bg-green-50 border-y-2 border-green-500 shadow-sm relative z-10' 
-                                                                                                : 'opacity-70'
-                                                                                        } ${
-                                                                                            isOptimal && !prevOptimal ? 'border-l-2 rounded-l-md' : ''
-                                                                                        } ${
-                                                                                            isOptimal && !nextOptimal ? 'border-r-2 rounded-r-md' : ''
-                                                                                        } ${
-                                                                                            isOptimal && prevOptimal ? '-ml-[2px]' : ''
-                                                                                        }`}
-                                                                                    >
-                                                                                        <span className="text-[11px] text-gray-400 font-bold">
-                                                                                           {format(parseISO(h.time), 'H')}
-                                                                                        </span>
-                                                                                        <span className="text-lg leading-none">
-                                                                                           {getWeatherIcon(h.weather_code)}
-                                                                                        </span>
-                                                                                        <span className={`text-[11px] font-black leading-none ${h.temp > 25 ? 'text-orange-500' : 'text-gray-700'}`}>
-                                                                                           {Math.round(h.temp)}°
-                                                                                        </span>
-                                                                                        <span className={`text-[9px] font-black leading-none ${h.precipitation_probability > 30 ? 'text-blue-500' : 'text-blue-300'}`}>
-                                                                                           {h.precipitation_probability}%
-                                                                                        </span>
-                                                                                    </div>
-                                                                                );
-                                                                            })}
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            )}
-
-                                                            <p className={`text-[10px] sm:text-xs leading-tight font-medium ${advice.color} sm:hidden block mt-1`}>
-                                                                {advice.text}
-                                                            </p>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
-                                    )}
-
                                     {/* 体重グラフ */}
                                     <div className="bg-white p-3 rounded-xl shadow-sm border border-gray-100">
                                         <h3 className="text-[10px] sm:text-xs font-bold mb-2 flex items-center text-gray-800">
@@ -458,12 +369,13 @@ const Dashboard = () => {
                                                     <Tooltip 
                                                         contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 2px 4px -1px rgb(0 0 0 / 0.1)', fontSize: '10px' }}
                                                         labelFormatter={(label) => format(new Date(label), 'yyyy/MM/dd(E)', { locale: ja })}
-                                                        formatter={(value: number) => {
-                                                            const labels = [`${value} kg`, '体重'];
+                                                        formatter={(value: any) => {
+                                                            const numericValue = Number(value);
+                                                            const labels = [`${numericValue} kg`, '体重'];
                                                             if (activePet.target_weight) {
-                                                                const diff = value - activePet.target_weight;
+                                                                const diff = numericValue - activePet.target_weight;
                                                                 const diffStr = diff > 0 ? `+${diff.toFixed(2)}` : diff.toFixed(2);
-                                                                labels[0] = `${value} kg (目標比: ${diffStr} kg)`;
+                                                                labels[0] = `${numericValue} kg (目標比: ${diffStr} kg)`;
                                                             }
                                                             return labels;
                                                         }}
@@ -686,64 +598,258 @@ const Dashboard = () => {
                                         </div>
                                     </div>
 
+                                    {/* 天気予報セクション */}
+                                    {dashboardData.weather && (
+                                        <div className="lg:col-span-2">
+                                            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                                                <button 
+                                                    onClick={() => setIsWeatherExpanded(!isWeatherExpanded)}
+                                                    className={`w-full flex items-center justify-between p-4 transition-all ${isWeatherExpanded ? 'bg-blue-50/30' : 'hover:bg-gray-50'}`}
+                                                >
+                                                    <div className="flex items-center gap-3 flex-1">
+                                                        <div className={`p-2 rounded-lg ${isWeatherExpanded ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500'}`}>
+                                                            <CloudSun className="h-4 w-4" />
+                                                        </div>
+                                                        <div className="text-left flex-1 mr-4 flex flex-col justify-center">
+                                                            <h3 className="text-sm font-bold text-gray-900 flex items-baseline justify-between h-5">
+                                                                <span>お散歩のお天気</span>
+                                                                <span className="inline-flex items-center justify-center text-[10px] font-bold bg-white px-2 py-0.5 rounded-full border border-gray-200 shadow-sm text-gray-500 self-center">
+                                                                    {dashboardData.weather.location}
+                                                                </span>
+                                                            </h3>
+                                                            <p className="text-[10px] text-gray-400 font-medium">
+                                                                {isWeatherExpanded ? '詳細な予報を表示中' : '今日の天気とお散歩のアドバイスを確認する'}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <div className={`p-1.5 rounded-full transition-all ${isWeatherExpanded ? 'bg-blue-100 text-blue-600 rotate-180' : 'bg-gray-100 text-gray-400'}`}>
+                                                        <ChevronDown className="h-4 w-4" />
+                                                    </div>
+                                                </button>
+
+                                                {isWeatherExpanded && (
+                                                    <div className="p-4 bg-white border-t border-gray-50">
+                                                        <div className="grid grid-cols-2 gap-3">
+                                                            {dashboardData.weather.forecast.map((f: any, i: number) => {
+                                                                const advice = getWeatherAdvice(f.weather_code, f.temp_max);
+                                                                const date = parseISO(f.date);
+                                                                return (
+                                                                    <div key={f.date} className={`p-3 rounded-lg border bg-gray-50 border-gray-100 ${i === 0 ? 'col-span-2' : 'col-span-2 sm:col-span-1'}`}>
+                                                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2">
+                                                                            <span className="text-xs font-bold text-gray-500">
+                                                                                {i === 0 ? '今日' : i === 1 ? '明日' : '明後日'}
+                                                                                <span className="ml-1 md:inline hidden">{format(date, 'MM/dd(E)', { locale: ja })}</span>
+                                                                            </span>
+                                                                            <div className="flex items-center space-x-2">
+                                                                                <span className="text-xs leading-tight font-medium text-gray-500 sm:block hidden">
+                                                                                    {advice.text}
+                                                                                </span>
+                                                                                <span className="text-3xl">{getWeatherIcon(f.weather_code)}</span>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="flex items-baseline space-x-1.5 mb-1.5">
+                                                                            <span className="text-lg font-bold text-gray-800">{f.temp_max}°</span>
+                                                                            <span className="text-xs text-gray-400">{f.temp_min}°</span>
+                                                                            <span className="text-xs text-blue-500 ml-auto">{f.precipitation_probability}%</span>
+                                                                        </div>
+                                                                        
+                                                                        {/* 今日の時間別予報 */}
+                                                                        {i === 0 && f.hourly && (
+                                                                            <div className="mt-3 pt-3 border-t border-gray-200">
+                                                                                <div className="flex items-center justify-between mb-2">
+                                                                                    <span className="text-[9px] sm:text-[10px] font-bold text-gray-500 flex items-center">
+                                                                                        <span className="w-2 h-2 rounded-full bg-green-500 mr-1"></span>
+                                                                                        お散歩最適ゾーン
+                                                                                        <span className="hidden sm:inline ml-1">（気温25℃以下・雨なし）</span>
+                                                                                    </span>
+                                                                                </div>
+                                                                                <div className="overflow-x-auto scrollbar-hide">
+                                                                                    <div className="flex pb-1 gap-0">
+                                                                                        {f.hourly.map((h: any, idx: number) => {
+                                                                                            const isOptimal = h.temp <= 25 && h.weather_code <= 3;
+                                                                                            const prevOptimal = idx > 0 && f.hourly[idx - 1].temp <= 25 && f.hourly[idx - 1].weather_code <= 3;
+                                                                                            const nextOptimal = idx < f.hourly.length - 1 && f.hourly[idx + 1].temp <= 25 && f.hourly[idx + 1].weather_code <= 3;
+
+                                                                                            return (
+                                                                                                <div 
+                                                                                                    key={h.time} 
+                                                                                                    className={`flex flex-col items-center space-y-0.5 px-0.5 py-1 transition-all flex-1 min-w-[1.4rem] ${
+                                                                                                        isOptimal 
+                                                                                                            ? 'bg-green-50 border-y-2 border-green-500 shadow-sm relative z-10' 
+                                                                                                            : 'opacity-70'
+                                                                                                    } ${
+                                                                                                        isOptimal && !prevOptimal ? 'border-l-2 rounded-l-md' : ''
+                                                                                                    } ${
+                                                                                                        isOptimal && !nextOptimal ? 'border-r-2 rounded-r-md' : ''
+                                                                                                    } ${
+                                                                                                        isOptimal && prevOptimal ? '-ml-[2px]' : ''
+                                                                                                    }`}
+                                                                                                >
+                                                                                                    <span className="text-[11px] text-gray-400 font-bold">
+                                                                                                       {format(parseISO(h.time), 'H')}
+                                                                                                    </span>
+                                                                                                    <span className="text-lg leading-none">
+                                                                                                       {getWeatherIcon(h.weather_code)}
+                                                                                                    </span>
+                                                                                                    <span className={`text-[11px] font-black leading-none ${h.temp > 25 ? 'text-orange-500' : 'text-gray-700'}`}>
+                                                                                                       {Math.round(h.temp)}°
+                                                                                                    </span>
+                                                                                                    <span className={`text-[9px] font-black leading-none ${h.precipitation_probability > 30 ? 'text-blue-500' : 'text-blue-300'}`}>
+                                                                                                       {h.precipitation_probability}%
+                                                                                                    </span>
+                                                                                                </div>
+                                                                                            );
+                                                                                        })}
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
+
+                                                                        <p className={`text-[10px] sm:text-xs leading-tight font-medium ${advice.color} sm:hidden block mt-1`}>
+                                                                            {advice.text}
+                                                                        </p>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {/* 近くの動物病院 */}
                                     {dashboardData.hospitals && dashboardData.hospitals.length > 0 && (
                                         <div className="lg:col-span-2">
-                                            <div className="flex items-center justify-between mb-2 mt-1">
-                                                <h3 className="text-xs font-bold flex items-center text-gray-800">
-                                                    <MapPin className="h-3.5 w-3.5 mr-1.5 text-rose-500" />
-                                                    近くの動物病院
-                                                </h3>
-                                            </div>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                                {dashboardData.hospitals.map((hospital: any, idx: number) => (
-                                                    <a 
-                                                        key={idx}
-                                                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(hospital.name)}`}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="p-3 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md hover:border-rose-100 transition-all flex flex-col group"
-                                                    >
-                                                        <div className="flex items-center justify-between mb-1">
-                                                            <span className="text-[11px] font-bold text-gray-800 line-clamp-1 group-hover:text-rose-600 transition-colors">
-                                                                {hospital.name}
-                                                            </span>
-                                                            <div className="flex items-center gap-1.5 ml-2">
-                                                                {hospital.open_now !== null && (
-                                                                    <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold ${hospital.open_now ? 'bg-green-50 text-green-600' : 'bg-gray-50 text-gray-400'}`}>
-                                                                        {hospital.open_now ? '営業中' : '営業時間外'}
-                                                                    </span>
-                                                                )}
-                                                                <span className="text-[10px] font-black text-rose-500 whitespace-nowrap">
-                                                                    {hospital.distance}km
+                                            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                                                <button 
+                                                    onClick={() => setIsHospitalsExpanded(!isHospitalsExpanded)}
+                                                    className={`w-full flex items-center justify-between p-4 transition-all ${isHospitalsExpanded ? 'bg-rose-50/30' : 'hover:bg-gray-50'}`}
+                                                >
+                                                    <div className="flex items-center gap-3 flex-1">
+                                                        <div className={`p-2 rounded-lg ${isHospitalsExpanded ? 'bg-rose-100 text-rose-600' : 'bg-gray-100 text-gray-500'}`}>
+                                                            <MapPin className="h-4 w-4" />
+                                                        </div>
+                                                        <div className="text-left flex-1 mr-4 flex flex-col justify-center">
+                                                            <h3 className="text-sm font-bold text-gray-900 flex items-baseline justify-between h-5">
+                                                                <span>近くの動物病院</span>
+                                                                <span className="inline-flex items-center justify-center text-[10px] font-bold bg-white px-2 py-0.5 rounded-full border border-gray-200 shadow-sm text-gray-500 self-center">
+                                                                    {dashboardData.hospitals.length}件
                                                                 </span>
-                                                            </div>
+                                                            </h3>
+                                                            <p className="text-[10px] text-gray-400 font-medium">
+                                                                {isHospitalsExpanded ? '詳細な情報を表示中' : '現在地周辺の病院を確認する'}
+                                                            </p>
                                                         </div>
-                                                        <div className="text-[9px] text-gray-400 line-clamp-2 leading-tight flex-1">
-                                                            {hospital.display_name}
-                                                        </div>
-                                                        {hospital.opening_hours && (
-                                                            <div className="mt-2 pt-2 border-t border-gray-50 grid grid-cols-2 gap-x-2 gap-y-0.5">
-                                                                {hospital.opening_hours.map((text: string, i: number) => {
-                                                                    // 今日の曜日が含まれているか判定
-                                                                    const days = ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日'];
-                                                                    const todayName = days[new Date().getDay()];
-                                                                    const isToday = text.startsWith(todayName);
-                                                                    
-                                                                    return (
-                                                                        <div key={i} className={`text-[9px] leading-tight ${isToday ? 'text-rose-600 font-bold' : 'text-gray-500'}`}>
-                                                                            {text}
+                                                    </div>
+                                                    <div className={`p-1.5 rounded-full transition-all ${isHospitalsExpanded ? 'bg-rose-100 text-rose-600 rotate-180' : 'bg-gray-100 text-gray-400'}`}>
+                                                        <ChevronDown className="h-4 w-4" />
+                                                    </div>
+                                                </button>
+                                                
+                                                {isHospitalsExpanded && (
+                                                    <div className="p-4 bg-white border-t border-gray-50">
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                            {dashboardData.hospitals.map((hospital: any, idx: number) => (
+                                                                <a 
+                                                                    key={idx}
+                                                                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(hospital.name)}`}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="p-3 bg-gray-50 rounded-xl border border-gray-100 hover:border-rose-200 hover:bg-rose-50/30 transition-all flex flex-col group relative overflow-hidden"
+                                                                >
+                                                                    <div className="flex items-start justify-between mb-1.5">
+                                                                        <div className="flex flex-col min-w-0 pr-2">
+                                                                            <span className="text-[12px] font-black text-gray-800 line-clamp-1 group-hover:text-rose-600 transition-colors">
+                                                                                {hospital.name}
+                                                                            </span>
+                                                                            <div className="flex items-center gap-2 mt-1">
+                                                                                {hospital.rating ? (
+                                                                                    <div className="flex items-center bg-white px-1.5 py-0.5 rounded-md border border-amber-100 shadow-sm">
+                                                                                        <Star 
+                                                                                            className="h-2.5 w-2.5 text-amber-500 fill-amber-500 mr-1" 
+                                                                                            style={{ display: 'inline-block' }} 
+                                                                                        />
+                                                                                        <span className="text-[10px] font-black text-amber-700">{hospital.rating}</span>
+                                                                                        {hospital.user_ratings_total && (
+                                                                                            <span className="text-[8px] text-gray-400 ml-0.5 font-bold">({hospital.user_ratings_total})</span>
+                                                                                        )}
+                                                                                    </div>
+                                                                                ) : (
+                                                                                    <span className="text-[9px] text-gray-400 font-medium italic">評価なし</span>
+                                                                                )}
+                                                                                <div className="flex items-center text-[10px] font-bold text-rose-500">
+                                                                                    <Navigation className="h-2.5 w-2.5 mr-0.5" />
+                                                                                    {hospital.distance}km
+                                                                                </div>
+                                                                            </div>
                                                                         </div>
-                                                                    );
-                                                                })}
-                                                            </div>
-                                                        )}
-                                                        <div className="mt-2 flex items-center justify-end text-[9px] font-bold text-gray-400 group-hover:text-rose-500">
-                                                            <Navigation className="h-2.5 w-2.5 mr-1" />
-                                                            ルートを検索
+                                                                        {hospital.open_now !== null && (
+                                                                            <div className={`shrink-0 text-[10px] px-2 py-0.5 rounded-full font-black shadow-sm ${hospital.open_now ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-500'}`}>
+                                                                                {hospital.open_now ? '営業中' : '時間外'}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                    
+                                                                    <div className="text-[10px] text-gray-500 line-clamp-1 leading-tight mb-1.5 font-medium flex items-center justify-between">
+                                                                        <span className="truncate mr-2">{hospital.display_name}</span>
+                                                                        {hospital.phone_number && (
+                                                                            <span className="shrink-0 flex items-center text-blue-600 font-bold hover:text-blue-700">
+                                                                                <Phone className="h-2.5 w-2.5 mr-0.5" />
+                                                                                {hospital.phone_number}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+
+                                                                    {hospital.opening_hours && (
+                                                                        <div className="mt-auto pt-2 border-t border-gray-100/50">
+                                                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-0.5">
+                                                                                {hospital.opening_hours.map((text: string, i: number) => {
+                                                                                    const days = ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日'];
+                                                                                    const todayName = days[new Date().getDay()];
+                                                                                    const isToday = text.startsWith(todayName);
+                                                                                    
+                                                                                    if (isToday) {
+                                                                                        return (
+                                                                                            <div key={i} className="text-[10px] leading-tight text-rose-600 font-black flex items-center col-span-full mb-1">
+                                                                                                <div className="w-1 h-1 rounded-full bg-rose-500 mr-1.5 anim-pulse" />
+                                                                                                本日: {text.split(': ')[1] || text}
+                                                                                            </div>
+                                                                                        );
+                                                                                    }
+                                                                                    return null;
+                                                                                })}
+                                                                                {hospital.opening_hours.map((text: string, i: number) => {
+                                                                                    const days = ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日'];
+                                                                                    const todayName = days[new Date().getDay()];
+                                                                                    const isToday = text.startsWith(todayName);
+                                                                                    if (isToday) return null;
+                                                                                    
+                                                                                    return (
+                                                                                        <div key={i} className="text-[9px] leading-tight text-gray-400 font-medium">
+                                                                                            {text}
+                                                                                        </div>
+                                                                                    );
+                                                                                })}
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+                                                                </a>
+                                                            ))}
                                                         </div>
-                                                    </a>
-                                                ))}
+                                                        <div className="mt-4 text-center">
+                                                            <a 
+                                                                href="https://www.google.com/maps/search/動物病院" 
+                                                                target="_blank" 
+                                                                rel="noopener noreferrer"
+                                                                className="inline-flex items-center text-[10px] font-bold text-gray-400 hover:text-rose-500 transition-colors"
+                                                            >
+                                                                Googleマップでさらに表示
+                                                                <Navigation className="h-2.5 w-2.5 ml-1" />
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     )}

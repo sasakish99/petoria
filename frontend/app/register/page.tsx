@@ -14,7 +14,7 @@ const Register = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [passwordConfirmation, setPasswordConfirmation] = useState('');
-    const [errors, setErrors] = useState([]);
+    const [errors, setErrors] = useState<any>([]);
 
     const submitForm = (event: any) => {
         event.preventDefault();
@@ -51,8 +51,8 @@ const Register = () => {
                             required
                             autoFocus
                         />
-                        {errors.name && (
-                            <p className="text-red-500 text-xs mt-1">{errors.name}</p>
+                        {errors && (errors as any).name && (
+                            <p className="text-red-500 text-xs mt-1">{(errors as any).name}</p>
                         )}
                     </div>
 
@@ -69,8 +69,8 @@ const Register = () => {
                             onChange={event => setEmail(event.target.value)}
                             required
                         />
-                        {errors.email && (
-                            <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+                        {errors && (errors as any).email && (
+                            <p className="text-red-500 text-xs mt-1">{(errors as any).email}</p>
                         )}
                     </div>
 
@@ -88,8 +88,8 @@ const Register = () => {
                             required
                             autoComplete="new-password"
                         />
-                        {errors.password && (
-                            <p className="text-red-500 text-xs mt-1">{errors.password}</p>
+                        {errors && (errors as any).password && (
+                            <p className="text-red-500 text-xs mt-1">{(errors as any).password}</p>
                         )}
                     </div>
 

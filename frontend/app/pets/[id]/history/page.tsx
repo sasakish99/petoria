@@ -307,10 +307,10 @@ export default function PetHistoryPage({ params }: { params: Promise<{ id: strin
                                                 {format(new Date(item.created_at), 'yyyy/MM/dd HH:mm')}
                                             </div>
                                             <p className="text-gray-900 font-bold truncate">
-                                                {item.result_text.split('\n').find(line => line.trim().length > 0)?.replace(/#|【|】/g, '') || '診断結果'}
+                                                {item.result_text.split('\n').find((line: string) => line.trim().length > 0)?.replace(/#|【|】/g, '') || '診断結果'}
                                             </p>
                                             <p className="text-gray-500 text-sm line-clamp-1 mt-1 leading-relaxed">
-                                                {item.result_text.replace(/#|【|】/g, '').split('\n').filter(line => line.trim().length > 0).slice(1).join(' ')}
+                                                {item.result_text.replace(/#|【|】/g, '').split('\n').filter((line: string) => line.trim().length > 0).slice(1).join(' ')}
                                             </p>
                                         </div>
                                         {!isAiEditMode && <ChevronRight className="h-5 w-5 text-gray-400" />}
