@@ -20,6 +20,7 @@ const PetEditContent = ({ params }: { params: any }) => {
     
     const [name, setName] = useState('');
     const [species, setSpecies] = useState('dog');
+    const [gender, setGender] = useState('');
     const [breedId, setBreedId] = useState('');
     const [birthday, setBirthday] = useState('');
     const [lastVaccinationDate, setLastVaccinationDate] = useState('');
@@ -46,6 +47,7 @@ const PetEditContent = ({ params }: { params: any }) => {
         if (pet) {
             setName(pet.name);
             setSpecies(pet.species);
+            setGender(pet.gender || '');
             setBreedId(pet.breed_id?.toString() || '');
             setBirthday(pet.birthday ? pet.birthday.split('T')[0] : '');
             setLastVaccinationDate(pet.last_vaccination_date ? pet.last_vaccination_date.split('T')[0] : '');
@@ -101,6 +103,7 @@ const PetEditContent = ({ params }: { params: any }) => {
         formData.append('_method', 'PUT');
         formData.append('name', name);
         formData.append('species', species);
+        if (gender) formData.append('gender', gender);
         if (breedId) formData.append('breed_id', breedId);
         if (birthday) formData.append('birthday', birthday);
         if (lastVaccinationDate) formData.append('last_vaccination_date', lastVaccinationDate);
@@ -125,7 +128,7 @@ const PetEditContent = ({ params }: { params: any }) => {
     };
 
     const handleDelete = async () => {
-        if (!confirm('このペットを削除してもよろしいですか？この操作は取り消せません。')) return;
+        if (!confirm('このうちの子を削除してもよろしいですか？この操作は取り消せません。')) return;
         
         try {
             await axios.delete(`/api/pets/${petId}`);
@@ -212,6 +215,31 @@ const PetEditContent = ({ params }: { params: any }) => {
                             <option value="other">その他</option>
                         </select>
                         {errors.species && <p className="mt-1 text-sm text-red-600">{errors.species[0]}</p>}
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-bold text-gray-700 mb-2">性別 (任意)</label>
+                        <div className="grid grid-cols-3 gap-3">
+                            {[
+                                { id: 'male', label: 'オス' },
+                                { id: 'female', label: 'メス' },
+                                { id: 'other', label: '不明' },
+                            ].map((g) => (
+                                <button
+                                    key={g.id}
+                                    type="button"
+                                    onClick={() => setGender(g.id)}
+                                    className={`py-3 px-4 rounded-xl border text-sm font-bold transition-all ${
+                                        gender === g.id
+                                            ? 'bg-indigo-600 border-indigo-600 text-white shadow-md'
+                                            : 'bg-white border-gray-200 text-gray-600 hover:border-indigo-300'
+                                    }`}
+                                >
+                                    {g.label}
+                                </button>
+                            ))}
+                        </div>
+                        {errors.gender && <p className="mt-1 text-sm text-red-600">{errors.gender[0]}</p>}
                     </div>
 
                     {(species === 'dog' || species === 'cat') && (

@@ -79,7 +79,7 @@ export default function PetHistoryPage({ params }: { params: Promise<{ id: strin
     }
 
     if (!pet) {
-        return <div className="min-h-screen flex items-center justify-center">ペットが見つかりませんでした。</div>;
+        return <div className="min-h-screen flex items-center justify-center">うちの子が見つかりませんでした。</div>;
     }
 
     // AI診断関連のハンドラー

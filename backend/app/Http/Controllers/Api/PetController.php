@@ -27,6 +27,7 @@ class PetController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'species' => 'required|string|max:255',
+            'gender' => 'nullable|string|in:male,female,other',
             'breed_id' => 'nullable', // 一旦バリデーションを緩める
             'birthday' => 'nullable',
             'last_vaccination_date' => 'nullable|date',
@@ -47,6 +48,7 @@ class PetController extends Controller
         $petData = [
             'name' => $validated['name'],
             'species' => $validated['species'],
+            'gender' => $validated['gender'] ?? null,
             'breed_id' => $request->input('breed_id') ?: null,
             'birthday' => $request->input('birthday') ?: null,
             'last_vaccination_date' => $request->input('last_vaccination_date') ?: null,
@@ -80,6 +82,7 @@ class PetController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'species' => 'required|string|max:255',
+            'gender' => 'nullable|string|in:male,female,other',
             'breed_id' => 'nullable',
             'birthday' => 'nullable',
             'last_vaccination_date' => 'nullable|date',
@@ -101,6 +104,7 @@ class PetController extends Controller
 
         // バリデーション済みデータ以外も考慮して手動で詰め直し
         $updateData = array_merge($validated, [
+            'gender' => $request->input('gender') ?: null,
             'breed_id' => $request->input('breed_id') ?: null,
             'birthday' => $request->input('birthday') ?: null,
             'last_vaccination_date' => $request->input('last_vaccination_date') ?: null,
@@ -190,7 +194,7 @@ class PetController extends Controller
                         'content' => [
                             [
                                 'type' => 'text',
-                                'text' => "このペット（{$pet->species}、種類：{$pet->breed?->name}）の画像を診断してください。
+                                'text' => "うちの子（{$pet->species}、種類：{$pet->breed?->name}）の画像を診断してください。
 今回は特に「{$targetPartName}」の部分を重点的に、プロの視点で観察し、具体的な箇所を褒める、または指摘して、自信に満ちたトーンで回答してください。
 また、この品種（{$pet->breed?->name}）がかかりやすい病気や、日常で気をつけるべき予防アドバイスも必ず含めてください。",
                             ],

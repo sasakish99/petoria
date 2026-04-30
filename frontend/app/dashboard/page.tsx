@@ -198,7 +198,18 @@ const Dashboard = () => {
                                             )}
                                         </div>
                                         <div className="ml-3 text-left hidden md:block">
-                                            <div className="text-sm font-bold truncate">{pet.name}</div>
+                                            <div className="flex items-center gap-1.5">
+                                                <div className="text-sm font-bold truncate">{pet.name}</div>
+                                                {pet.gender && (
+                                                    <span className={`flex-shrink-0 text-[9px] font-bold px-1 py-0 rounded-full ${
+                                                        pet.gender === 'male' ? 'bg-blue-50 text-blue-600' : 
+                                                        pet.gender === 'female' ? 'bg-rose-50 text-rose-600' : 
+                                                        'bg-gray-100 text-gray-500'
+                                                    }`}>
+                                                        {pet.gender === 'male' ? '♂' : pet.gender === 'female' ? '♀' : '?'}
+                                                    </span>
+                                                )}
+                                            </div>
                                             <div className="text-xs opacity-70">
                                                 {pet.breed?.name ?? ''}
                                                 {pet.birthday && ` (${calculateAge(pet.birthday)})`}
@@ -244,7 +255,18 @@ const Dashboard = () => {
                                                     pet.name.substring(0, 1)
                                                 )}
                                             </div>
-                                            <span className="text-[11px] font-bold truncate max-w-[60px] text-center">{pet.name}</span>
+                                            <div className="flex items-center gap-1">
+                                                <span className="text-[11px] font-bold truncate max-w-[60px] text-center">{pet.name}</span>
+                                                {pet.gender && (
+                                                    <span className={`flex-shrink-0 text-[8px] font-bold px-0.5 rounded-full ${
+                                                        pet.gender === 'male' ? 'text-blue-600' : 
+                                                        pet.gender === 'female' ? 'text-rose-600' : 
+                                                        'text-gray-500'
+                                                    }`}>
+                                                        {pet.gender === 'male' ? '♂' : pet.gender === 'female' ? '♀' : '?'}
+                                                    </span>
+                                                )}
+                                            </div>
                                             {pet.birthday && (
                                                 <span className="text-[9px] opacity-70 whitespace-nowrap">
                                                     {calculateAge(pet.birthday)}
@@ -281,10 +303,33 @@ const Dashboard = () => {
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                     <div className="flex items-baseline gap-2 min-w-0">
                                         <h2 className="text-xl font-extrabold text-gray-900 leading-tight truncate">{activePet.name}</h2>
-                                        <p className="text-xs text-gray-500 truncate">
-                                            {activePet.breed?.name ?? ''}
-                                            {activePet.birthday && ` • ${calculateAge(activePet.birthday)}`}
-                                        </p>
+                                        <div className="flex items-center gap-1 min-w-0">
+                                            {activePet.gender && (
+                                                <span className={`flex-shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                                                    activePet.gender === 'male' ? 'bg-blue-50 text-blue-600' : 
+                                                    activePet.gender === 'female' ? 'bg-rose-50 text-rose-600' : 
+                                                    'bg-gray-100 text-gray-500'
+                                                }`}>
+                                                    {activePet.gender === 'male' ? '♂' : activePet.gender === 'female' ? '♀' : '?'}
+                                                </span>
+                                            )}
+                                            <p className="text-xs text-gray-500 truncate flex items-center gap-1.5">
+                                                <span>
+                                                    {activePet.breed?.name ?? ''}
+                                                    {activePet.birthday && ` • ${calculateAge(activePet.birthday)}`}
+                                                </span>
+                                                {latestWeight && (
+                                                    <span className="sm:hidden flex items-center gap-1 before:content-['•'] before:mr-0.5">
+                                                        <span className="font-bold text-gray-700">{latestWeight}kg</span>
+                                                        {weightDiff !== null && (
+                                                            <span className={`text-[10px] font-black ${weightDiff > 0 ? 'text-rose-500' : weightDiff < 0 ? 'text-emerald-500' : 'text-gray-400'}`}>
+                                                                ({weightDiff > 0 ? `+${weightDiff.toFixed(2)}` : weightDiff.toFixed(2)})
+                                                            </span>
+                                                        )}
+                                                    </span>
+                                                )}
+                                            </p>
+                                        </div>
                                         {latestWeight && (
                                             <div className="hidden sm:flex items-center ml-2 bg-white px-2 py-0.5 rounded-full border border-gray-100 shadow-sm">
                                                 <span className="text-xs font-bold text-gray-700">{latestWeight}kg</span>
@@ -298,16 +343,6 @@ const Dashboard = () => {
                                         )}
                                     </div>
                                     <div className="flex flex-wrap items-center justify-end gap-2">
-                                        {latestWeight && (
-                                            <div className="flex sm:hidden items-center bg-white px-2 py-1.5 rounded-lg border border-gray-100 shadow-sm mr-auto">
-                                                <span className="text-xs font-bold text-gray-700">{latestWeight}kg</span>
-                                                {weightDiff !== null && (
-                                                    <span className={`text-[10px] font-black ml-1.5 ${weightDiff > 0 ? 'text-rose-500' : weightDiff < 0 ? 'text-emerald-500' : 'text-gray-400'}`}>
-                                                        {weightDiff > 0 ? `+${weightDiff.toFixed(2)}` : weightDiff.toFixed(2)}
-                                                    </span>
-                                                )}
-                                            </div>
-                                        )}
                                         <div className="flex items-center justify-end gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0 scrollbar-hide">
                                             <Link 
                                                 href={`/pets/${activePet.id}/edit`}

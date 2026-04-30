@@ -18,6 +18,7 @@ const PetCreate = () => {
     
     const [name, setName] = useState('');
     const [species, setSpecies] = useState('dog');
+    const [gender, setGender] = useState('');
     const [breedId, setBreedId] = useState('');
     const [birthday, setBirthday] = useState('');
     const [lastVaccinationDate, setLastVaccinationDate] = useState('');
@@ -77,6 +78,7 @@ const PetCreate = () => {
         const formData = new FormData();
         formData.append('name', name);
         formData.append('species', species);
+        if (gender) formData.append('gender', gender);
         if (breedId) formData.append('breed_id', breedId);
         if (birthday) formData.append('birthday', birthday);
         if (lastVaccinationDate) formData.append('last_vaccination_date', lastVaccinationDate);
@@ -115,7 +117,7 @@ const PetCreate = () => {
                     <button onClick={() => router.back()} className="p-2 mr-4 hover:bg-gray-100 rounded-full transition-colors">
                         <ChevronLeft className="h-6 w-6 text-gray-500" />
                     </button>
-                    <h2 className="text-xl font-bold text-gray-900">ペットを登録する</h2>
+                    <h2 className="text-xl font-bold text-gray-900">うちの子を登録する</h2>
                 </div>
                 
                 <form onSubmit={handleSubmit} className="p-8 space-y-6">
@@ -174,6 +176,31 @@ const PetCreate = () => {
                             <option value="other">その他</option>
                         </select>
                         {errors.species && <p className="mt-1 text-sm text-red-600">{errors.species[0]}</p>}
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-bold text-gray-700 mb-2">性別 (任意)</label>
+                        <div className="grid grid-cols-3 gap-3">
+                            {[
+                                { id: 'male', label: 'オス' },
+                                { id: 'female', label: 'メス' },
+                                { id: 'other', label: '不明' },
+                            ].map((g) => (
+                                <button
+                                    key={g.id}
+                                    type="button"
+                                    onClick={() => setGender(g.id)}
+                                    className={`py-3 px-4 rounded-xl border text-sm font-bold transition-all ${
+                                        gender === g.id
+                                            ? 'bg-indigo-600 border-indigo-600 text-white shadow-md'
+                                            : 'bg-white border-gray-200 text-gray-600 hover:border-indigo-300'
+                                    }`}
+                                >
+                                    {g.label}
+                                </button>
+                            ))}
+                        </div>
+                        {errors.gender && <p className="mt-1 text-sm text-red-600">{errors.gender[0]}</p>}
                     </div>
 
                     {(species === 'dog' || species === 'cat') && (

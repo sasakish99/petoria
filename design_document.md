@@ -22,20 +22,20 @@
 | password | string | ハッシュ化されたパスワード |
 | timestamps | - | 作成・更新日時 |
 
-### pets (ペット)
-| カラム名 | 型 | 説明 |
-| :--- | :--- | :--- |
-| id | bigint | プライマリキー |
-| user_id | foreignId | users.id への外部参照 |
-| name | string | ペットの名前 |
-| species | string | 種類（犬、猫など） |
-| breed_id | foreignId | breeds.id への外部参照 (nullable) |
-| birthday | date | 生年月日 (nullable) |
-| target_weight | decimal | 目標体重 (nullable) |
-| image_path | string | ペット画像パス (nullable) |
-| theme_color | string | テーマカラー (nullable) |
-| last_vaccination_date | date | 最終ワクチン接種日 (nullable) |
-| timestamps | - | 作成・更新日時 |
+### pets (うちの子)
+| カラム名 | 型 | 説明                           |
+| :--- | :--- |:-----------------------------|
+| id | bigint | プライマリキー                      |
+| user_id | foreignId | users.id への外部参照              |
+| name | string | うちの子の名前                          |
+| species | string | 種類（犬、猫など）                    |
+| breed_id | foreignId | breeds.id への外部参照 (nullable)  |
+| birthday | date | 生年月日 (nullable)              |
+| target_weight | decimal | 目標体重 (nullable)              |
+| image_path | string | うちの子画像パス (nullable)          |
+| theme_color | string | テーマカラー (nullable)            |
+| last_vaccination_date | date | 最終ワクチン接種日 (nullable)         |
+| timestamps | - | 作成・更新日時                      |
 
 ### breeds (品種)
 | カラム名 | 型 | 説明 |
@@ -97,14 +97,14 @@
 - `POST /api/logout`: ログアウト
 
 ### ダッシュボード
-- `GET /api/dashboard`: ログイン中のユーザーに紐づく全てのペット情報、直近の体重記録（30件）、未完了の医療イベントを取得
+- `GET /api/dashboard`: ログイン中のユーザーに紐づく全てのうちの子 情報、直近の体重記録（30件）、未完了の医療イベントを取得
 
-### ペット管理
-- `GET /api/pets`: ペット一覧取得
-- `POST /api/pets`: ペット登録
-- `GET /api/pets/{pet}`: ペット詳細取得
-- `PUT /api/pets/{pet}`: ペット情報更新
-- `DELETE /api/pets/{pet}`: ペット削除
+### うちの子管理
+- `GET /api/pets`: うちの子一覧取得
+- `POST /api/pets`: うちの子登録
+- `GET /api/pets/{pet}`: うちの子 詳細取得
+- `PUT /api/pets/{pet}`: うちの子情報更新
+- `DELETE /api/pets/{pet}`: うちの子削除
 
 ### 記録管理
 - `POST /api/pets/{pet}/weight-logs`: 体重記録の保存
@@ -118,7 +118,7 @@
 
 ### ダッシュボード
 - ログイン後のメイン画面。
-- **ペット切り替え**: 複数飼育に対応し、スクロールで各ペットの状態を表示。
+- **うちの子切り替え**: 複数飼育に対応し、スクロールでうちの子の状態を表示。
 - **体重推移グラフ**: Recharts を使用した折れ線グラフ。
 - **散歩時間グラフ**: Recharts を使用した棒グラフ。1週間の合計時間（分/週）と1日の平均時間（分/日）を表示。
 - **お知らせ**: 期限が近い、または過ぎている医療予定を表示。
@@ -126,5 +126,5 @@
 
 ## 5. 今後の拡張予定
 - **AI画像解析の実装**: OpenAI API 連携による健康アドバイス機能。
-- **写真投稿機能**: ペットの日常の写真保存。
+- **写真投稿機能**: うちの子の日常の写真保存。
 - **ネイティブアプリ展開**: iOS / Android 向け API 活用。
