@@ -465,20 +465,6 @@ const Dashboard = () => {
                                             >
                                                 編集
                                             </Link>
-                                            <button 
-                                                onClick={() => setSelectedPetForLog(activePet)}
-                                                className={`flex-shrink-0 px-4 py-2 text-xs bg-white/70 backdrop-blur-sm border border-slate-200 rounded-xl shadow-sm hover:bg-white hover:-translate-y-0.5 hover:shadow-md transition-all flex items-center font-bold ${theme.text}`}
-                                            >
-                                                <PlusCircle className="h-4 w-4 mr-1.5" />
-                                                記録
-                                            </button>
-                                            <button 
-                                                onClick={() => setSelectedPetForExercise(activePet)}
-                                                className={`flex-shrink-0 px-4 py-2 text-xs bg-white/70 backdrop-blur-sm border border-slate-200 rounded-xl shadow-sm hover:bg-white hover:-translate-y-0.5 hover:shadow-md transition-all flex items-center font-bold text-emerald-600`}
-                                            >
-                                                <Activity className="h-4 w-4 mr-1.5" />
-                                                運動
-                                            </button>
                                             <Link 
                                                 href={`/pets/${activePet.id}/ai-diagnose`}
                                                 className={`flex-shrink-0 px-4 py-2 text-xs text-white rounded-xl shadow-lg shadow-slate-200 hover:-translate-y-0.5 hover:shadow-xl transition-all font-bold flex items-center ${theme.bg} ${theme.hover}`}
@@ -498,10 +484,19 @@ const Dashboard = () => {
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                     {/* 体重グラフ */}
                                     <div className="bg-white/70 backdrop-blur-lg p-6 rounded-3xl shadow-xl shadow-slate-200/50 border border-white">
-                                        <h3 className="text-sm font-black mb-6 flex items-center text-slate-800 tracking-tight">
-                                            <Activity className={`h-4 w-4 mr-2 ${theme.text}`} />
-                                            体重推移 (kg)
-                                        </h3>
+                                        <div className="flex items-center justify-between mb-6">
+                                            <h3 className="text-sm font-black flex items-center text-slate-800 tracking-tight">
+                                                <Activity className={`h-4 w-4 mr-2 ${theme.text}`} />
+                                                体重推移 (kg)
+                                            </h3>
+                                            <button
+                                                onClick={() => setSelectedPetForLog(activePet)}
+                                                className={`px-3 py-1 ${theme.light} ${theme.text} rounded-lg text-[10px] font-black hover:opacity-80 transition-all border ${theme.border} shadow-sm flex items-center gap-1.5`}
+                                            >
+                                                <PlusCircle className="h-3 w-3" />
+                                                記録する
+                                            </button>
+                                        </div>
                                         <div className="h-44 w-full">
                                             <ResponsiveContainer width="100%" height="100%">
                                                 <LineChart 
@@ -578,29 +573,36 @@ const Dashboard = () => {
 
                                     {/* 散歩時間グラフ */}
                                     <div className="bg-white/70 backdrop-blur-lg p-6 rounded-3xl shadow-xl shadow-slate-200/50 border border-white">
-                                        <div className="flex items-center justify-between mb-6">
+                                        <div className="flex items-center justify-between mb-4">
                                             <h3 className="text-sm font-black flex items-center text-slate-800 tracking-tight">
                                                 <Activity className="h-4 w-4 mr-2 text-emerald-500" />
                                                 1週間の散歩 (分)
                                             </h3>
-                                            <div className="flex items-center gap-6">
-                                                <div className="flex flex-col items-end">
-                                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-0.5">合計</span>
-                                                    <div>
-                                                        <span className="text-xl font-black text-slate-800 tracking-tighter">
-                                                            {getWeeklyExerciseData(activePet.exercise_logs).reduce((acc, curr) => acc + (curr.duration_minutes || 0), 0)}
-                                                        </span>
-                                                        <span className="text-[10px] font-bold text-slate-500 ml-1">分</span>
-                                                    </div>
+                                            <button
+                                                onClick={() => setSelectedPetForExercise(activePet)}
+                                                className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-lg text-[10px] font-black hover:bg-emerald-100 transition-colors border border-emerald-100/50 flex items-center gap-1.5"
+                                            >
+                                                <PlusCircle className="h-3 w-3" />
+                                                運動を記録
+                                            </button>
+                                        </div>
+                                        <div className="flex items-center justify-end gap-6 mb-6 border-b border-slate-50 pb-4">
+                                            <div className="flex flex-col items-end">
+                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-0.5">合計</span>
+                                                <div>
+                                                    <span className="text-xl font-black text-slate-800 tracking-tighter">
+                                                        {getWeeklyExerciseData(activePet.exercise_logs).reduce((acc, curr) => acc + (curr.duration_minutes || 0), 0)}
+                                                    </span>
+                                                    <span className="text-[10px] font-bold text-slate-500 ml-1">分</span>
                                                 </div>
-                                                <div className="flex flex-col items-end border-l border-slate-100 pl-6">
-                                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-0.5">1日平均</span>
-                                                    <div>
-                                                        <span className="text-xl font-black text-slate-800 tracking-tighter">
-                                                            {Math.round(getWeeklyExerciseData(activePet.exercise_logs).reduce((acc, curr) => acc + (curr.duration_minutes || 0), 0) / 7)}
-                                                        </span>
-                                                        <span className="text-[10px] font-bold text-slate-500 ml-1">分</span>
-                                                    </div>
+                                            </div>
+                                            <div className="flex flex-col items-end border-l border-slate-100 pl-6">
+                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-0.5">1日平均</span>
+                                                <div>
+                                                    <span className="text-xl font-black text-slate-800 tracking-tighter">
+                                                        {Math.round(getWeeklyExerciseData(activePet.exercise_logs).reduce((acc, curr) => acc + (curr.duration_minutes || 0), 0) / 7)}
+                                                    </span>
+                                                    <span className="text-[10px] font-bold text-slate-500 ml-1">分</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -896,6 +898,13 @@ const Dashboard = () => {
                                             <ClipboardList className={`h-4 w-4 mr-2 ${theme.text}`} />
                                             最近の健康記録
                                         </h3>
+                                        <button 
+                                            onClick={() => setSelectedPetForLog(activePet)}
+                                            className={`px-3 py-1 ${theme.light} ${theme.text} rounded-lg text-[10px] font-black hover:opacity-80 transition-all border ${theme.border} shadow-sm flex items-center gap-1.5`}
+                                        >
+                                            <PlusCircle className="h-3 w-3" />
+                                            記録する
+                                        </button>
                                     </div>
                                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                                             {activePet.health_logs && activePet.health_logs.length > 0 ? (
