@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\PetController;
 use App\Http\Controllers\Api\HealthLogController;
 use App\Http\Controllers\Api\WeightLogController;
 use App\Http\Controllers\Api\MedicalEventController;
+use App\Http\Controllers\Api\VaccinationCertificateController;
 use App\Http\Controllers\Api\BreedController;
 
 Route::middleware(['auth:sanctum'])->group(function () {
@@ -53,6 +54,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::delete('pets/{pet}/health-logs/{healthLog}', [HealthLogController::class, 'destroy']);
     Route::post('pets/{pet}/weight-logs', [WeightLogController::class, 'store']);
     Route::post('pets/{pet}/medical-events', [MedicalEventController::class, 'store']);
+    Route::post('pets/{pet}/vaccination-certificates/analyze', [VaccinationCertificateController::class, 'analyze']);
+    Route::post('pets/{pet}/vaccination-certificates', [VaccinationCertificateController::class, 'store']);
 });
 
 require __DIR__.'/auth.php';

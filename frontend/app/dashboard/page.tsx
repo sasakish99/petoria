@@ -36,17 +36,21 @@ import {
     Clock,
     ExternalLink,
     Loader2,
-    X
+    X,
+    CheckCircle2
 } from 'lucide-react';
 import { format, differenceInYears, differenceInMonths, subDays, isSameDay, parseISO } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import HealthLogModal from '@/components/HealthLogModal';
+import VaccinationCertificateModal from '@/components/VaccinationCertificateModal';
 
 const Dashboard = () => {
     const { user, logout } = useAuth({ middleware: 'auth' });
     const [selectedPetForLog, setSelectedPetForLog] = useState<any>(null);
+    const [selectedPetForCertificate, setSelectedPetForCertificate] = useState<any>(null);
+    const [viewingCertificate, setViewingCertificate] = useState<any>(null);
     const [editingLog, setEditingLog] = useState<any>(null);
     const [activePetId, setActivePetId] = useState<number | null>(null);
     const [isHospitalsExpanded, setIsHospitalsExpanded] = useState(false);
@@ -622,30 +626,33 @@ const Dashboard = () => {
                                             重要なお知らせ
                                         </h3>
                                         <div className="space-y-3 flex-1">
-                                            {(activePet.medical_events.length > 0 || (activePet.generated_announcements && activePet.generated_announcements.length > 0)) ? (
+                                            {(activePet.medical_events.length > 0) ? (
                                                 <>
-                                                    {activePet.medical_events.map((event: any) => (
-                                                        <div key={event.id} className="flex items-start p-3 bg-amber-50/50 backdrop-blur-sm rounded-2xl border border-amber-100/50 shadow-sm">
-                                                            <div className="h-8 w-8 rounded-xl bg-amber-100 flex items-center justify-center mr-3 flex-shrink-0">
-                                                                <Calendar className="h-4 w-4 text-amber-600" />
+                                                    {activePet.medical_events.map((event: any) => {
+                                                        const isVaccine = !!event.vaccine_type;
+                                                        const eventDate = new Date(event.event_date);
+                                                        const nextDate = event.next_event_date ? new Date(event.next_event_date) : null;
+                                                        const displayDate = (!event.is_completed || isVaccine) && nextDate ? nextDate : eventDate;
+                                                        const isUpcoming = displayDate > new Date();
+
+                                                        if (!isUpcoming && event.is_completed) return null;
+
+                                                        return (
+                                                            <div key={event.id} className={`flex items-start p-3 rounded-2xl border shadow-sm backdrop-blur-sm ${isVaccine ? 'bg-indigo-50/50 border-indigo-100/50' : 'bg-amber-50/50 border-amber-100/50'}`}>
+                                                                <div className={`h-8 w-8 rounded-xl flex items-center justify-center mr-3 flex-shrink-0 ${isVaccine ? 'bg-indigo-100 text-indigo-600' : 'bg-amber-100 text-amber-600'}`}>
+                                                                    {isVaccine ? <CheckCircle2 className="h-4 w-4" /> : <Calendar className="h-4 w-4" />}
+                                                                </div>
+                                                                <div>
+                                                                    <p className={`text-xs font-black leading-tight ${isVaccine ? 'text-indigo-900' : 'text-amber-900'}`}>
+                                                                        {isVaccine ? `${event.title} (次回)` : event.title}
+                                                                    </p>
+                                                                    <p className={`text-[10px] font-bold mt-1 uppercase tracking-wider ${isVaccine ? 'text-indigo-700' : 'text-amber-700'}`}>
+                                                                        予定日: {format(displayDate, 'yyyy/MM/dd')}
+                                                                    </p>
+                                                                </div>
                                                             </div>
-                                                            <div>
-                                                                <p className="text-xs font-black text-amber-900 leading-tight">{event.title}</p>
-                                                                <p className="text-[10px] text-amber-700 font-bold mt-1 uppercase tracking-wider">予定日: {format(new Date(event.event_date), 'yyyy/MM/dd')}</p>
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                    {activePet.generated_announcements && activePet.generated_announcements.map((announcement: any) => (
-                                                        <div key={announcement.id} className="flex items-start p-3 bg-blue-50/50 backdrop-blur-sm rounded-2xl border border-blue-100/50 shadow-sm">
-                                                            <div className="h-8 w-8 rounded-xl bg-blue-100 flex items-center justify-center mr-3 flex-shrink-0">
-                                                                <Bell className="h-4 w-4 text-blue-600" />
-                                                            </div>
-                                                            <div>
-                                                                <p className="text-xs font-black text-blue-900 leading-tight">{announcement.title}</p>
-                                                                <p className="text-[10px] text-blue-700 font-bold mt-1 uppercase tracking-wider">推奨時期: {format(new Date(announcement.event_date), 'yyyy/MM/dd')}</p>
-                                                            </div>
-                                                        </div>
-                                                    ))}
+                                                        );
+                                                    })}
                                                 </>
                                             ) : (
                                                 <div className="flex-1 flex items-center justify-center py-6">
@@ -655,8 +662,72 @@ const Dashboard = () => {
                                         </div>
                                     </div>
 
-                                    {/* AI診断要約 */}
-                                    <div className="bg-white/70 backdrop-blur-lg p-6 rounded-3xl shadow-xl shadow-slate-200/50 border border-white flex flex-col">
+                                            {/* AI診断要約 */}
+                                            <div className="bg-white/70 backdrop-blur-lg p-6 rounded-3xl shadow-xl shadow-slate-200/50 border border-white flex flex-col">
+                                                <div className="flex items-center justify-between mb-4">
+                                                    <h3 className="text-sm font-black flex items-center text-slate-800 tracking-tight">
+                                                        <Activity className="h-4 w-4 mr-2 text-indigo-500" />
+                                                        ワクチンの管理
+                                                    </h3>
+                                                    <button
+                                                        onClick={() => setSelectedPetForCertificate(activePet)}
+                                                        className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-black hover:bg-indigo-100 transition-colors border border-indigo-100/50 flex items-center gap-1.5"
+                                                    >
+                                                        <PlusCircle className="h-3 w-3" />
+                                                        証明書を取り込む
+                                                    </button>
+                                                </div>
+                                                <div className="flex-1">
+                                                    {activePet.medical_events && activePet.medical_events.filter((e: any) => e.vaccine_type).length > 0 ? (
+                                                        <div className="space-y-3">
+                                                            {activePet.medical_events.filter((e: any) => e.vaccine_type).slice(0, 2).map((event: any) => (
+                                                                <div 
+                                                                    key={event.id} 
+                                                                    className={`p-3 bg-slate-50/50 border border-slate-100/50 rounded-2xl flex items-center justify-between transition-all ${event.certificate_path ? 'cursor-pointer hover:bg-white hover:shadow-md hover:-translate-y-0.5' : ''}`}
+                                                                    onClick={() => event.certificate_path && setViewingCertificate(event)}
+                                                                >
+                                                                    <div className="flex items-center gap-3">
+                                                                        <div className={`h-8 w-8 rounded-xl flex items-center justify-center shadow-sm ${event.vaccine_type === 'rabies' ? 'bg-rose-50 text-rose-500' : 'bg-indigo-50 text-indigo-500'}`}>
+                                                                            <CheckCircle2 className="h-4 w-4" />
+                                                                        </div>
+                                                                        <div>
+                                                                            <div className="flex items-center gap-1.5">
+                                                                                <p className="text-[11px] font-black text-slate-800">{event.title}</p>
+                                                                                {event.certificate_path && (
+                                                                                    <div className="px-1.5 py-0.5 bg-emerald-50 text-emerald-600 rounded text-[8px] font-black border border-emerald-100/50 flex items-center gap-0.5">
+                                                                                        <Activity className="h-2 w-2" />
+                                                                                        証明書あり
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+                                                                            <p className="text-[9px] text-slate-400 font-bold">{format(new Date(event.event_date), 'yyyy/MM/dd')} 接種</p>
+                                                                        </div>
+                                                                    </div>
+                                                                    {event.next_event_date && (
+                                                                        <div className="text-right">
+                                                                            <p className="text-[8px] text-slate-400 font-bold uppercase tracking-tighter">次回予定</p>
+                                                                            <p className="text-[10px] font-black text-indigo-600">{format(new Date(event.next_event_date), 'yyyy/MM/dd')}</p>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="h-full flex flex-col items-center justify-center py-6 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200/50">
+                                                            <p className="text-xs text-slate-400 font-medium italic mb-3 tracking-tight">ワクチン記録がありません</p>
+                                                            <button 
+                                                                onClick={() => setSelectedPetForCertificate(activePet)}
+                                                                className="px-4 py-2 text-[11px] bg-white text-indigo-600 rounded-xl font-black transition-all shadow-sm border border-indigo-100 hover:shadow-md hover:-translate-y-0.5"
+                                                            >
+                                                                AIで取り込む
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* AI診断要約 */}
+                                            <div className="bg-white/70 backdrop-blur-lg p-6 rounded-3xl shadow-xl shadow-slate-200/50 border border-white flex flex-col">
                                         <h3 className="text-sm font-black mb-4 flex items-center text-slate-800 tracking-tight">
                                             <HeartPulse className="h-4 w-4 mr-2 text-rose-500" />
                                             最新のAI診断
@@ -1054,6 +1125,72 @@ const Dashboard = () => {
                     }} 
                     onSuccess={() => mutate()}
                 />
+            )}
+
+            {selectedPetForCertificate && (
+                <VaccinationCertificateModal
+                    pet={selectedPetForCertificate}
+                    isOpen={!!selectedPetForCertificate}
+                    onClose={() => setSelectedPetForCertificate(null)}
+                    onSuccess={() => mutate()}
+                />
+            )}
+
+            {/* 証明書表示モーダル */}
+            {viewingCertificate && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-md transition-all duration-300">
+                    <div 
+                        className="absolute inset-0" 
+                        onClick={() => setViewingCertificate(null)}
+                    />
+                    <div className="relative w-full max-w-2xl bg-white rounded-[32px] shadow-2xl overflow-hidden border border-white/20 animate-in fade-in zoom-in duration-300">
+                        <div className="absolute top-4 right-4 z-10">
+                            <button
+                                onClick={() => setViewingCertificate(null)}
+                                className="p-2 bg-black/20 hover:bg-black/40 text-white rounded-full transition-colors backdrop-blur-md"
+                            >
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
+
+                        <div className="p-6 sm:p-8">
+                            <div className="flex items-center gap-4 mb-6">
+                                <div className={`h-12 w-12 rounded-2xl flex items-center justify-center shadow-sm ${viewingCertificate.vaccine_type === 'rabies' ? 'bg-rose-50 text-rose-500' : 'bg-indigo-50 text-indigo-500'}`}>
+                                    <CheckCircle2 className="h-6 w-6" />
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-black text-slate-800 tracking-tight">{viewingCertificate.title} 接種証明書</h3>
+                                    <p className="text-sm text-slate-400 font-bold">
+                                        {format(new Date(viewingCertificate.event_date), 'yyyy年MM月dd日')} 接種
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="relative aspect-[3/4] sm:aspect-video w-full rounded-2xl overflow-hidden bg-slate-100 border border-slate-200">
+                                <img
+                                    src={`${process.env.NEXT_PUBLIC_BACKEND_URL}/storage/${viewingCertificate.certificate_path}`}
+                                    alt="接種証明書"
+                                    className="w-full h-full object-contain"
+                                />
+                            </div>
+
+                            <div className="mt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                <div>
+                                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1">次回の予定</p>
+                                    <p className="text-sm font-black text-indigo-600">
+                                        {viewingCertificate.next_event_date ? format(new Date(viewingCertificate.next_event_date), 'yyyy年MM月dd日') : '未定'}
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => setViewingCertificate(null)}
+                                    className="w-full sm:w-auto px-6 py-2.5 bg-slate-800 text-white text-xs font-black rounded-xl hover:bg-slate-700 transition-all shadow-md shadow-slate-200"
+                                >
+                                    閉じる
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

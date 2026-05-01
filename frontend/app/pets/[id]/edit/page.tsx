@@ -275,17 +275,6 @@ const PetEditContent = ({ params }: { params: any }) => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">前回の混合ワクチン接種日 (任意)</label>
-                        <input
-                            type="date"
-                            value={lastVaccinationDate}
-                            onChange={(e) => setLastVaccinationDate(e.target.value)}
-                            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                        />
-                        {errors.last_vaccination_date && <p className="mt-1 text-sm text-red-600">{errors.last_vaccination_date[0]}</p>}
-                    </div>
-
-                    <div>
                         <label className="block text-sm font-bold text-gray-700 mb-2">目標体重 (kg)</label>
                         <input
                             type="number"
