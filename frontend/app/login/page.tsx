@@ -32,6 +32,15 @@ const Login = () => {
                     </h1>
                     <p className="text-slate-500 font-medium">おかえりなさい、飼い主さん</p>
                 </div>
+
+                {/* Validation Errors */}
+                {errors && Object.keys(errors).length > 0 && (
+                    <div className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-100 font-medium text-sm text-rose-600">
+                        {Object.keys(errors).map((key) => (
+                            <p key={key}>{errors[key]}</p>
+                        ))}
+                    </div>
+                )}
                 
                 {status && (
                     <div className="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-100 font-medium text-sm text-emerald-600">
@@ -50,14 +59,11 @@ const Login = () => {
                             type="email"
                             value={email}
                             placeholder="mail@example.com"
-                            className="block w-full px-4 py-3 rounded-xl bg-slate-50 border-slate-200 shadow-sm focus:border-slate-400 focus:ring focus:ring-slate-200 focus:ring-opacity-50 transition-all"
+                            className="block w-full px-4 py-3 rounded-xl bg-slate-50 border-slate-200 shadow-sm focus:border-slate-400 focus:ring focus:ring-slate-200/50 transition-all"
                             onChange={event => setEmail(event.target.value)}
                             required
                             autoFocus
                         />
-                        {errors && (errors as any).email && (
-                            <p className="text-rose-500 text-xs mt-2 ml-1">{(errors as any).email}</p>
-                        )}
                     </div>
 
                     {/* Password */}
@@ -70,14 +76,11 @@ const Login = () => {
                             type="password"
                             value={password}
                             placeholder="••••••••"
-                            className="block w-full px-4 py-3 rounded-xl bg-slate-50 border-slate-200 shadow-sm focus:border-slate-400 focus:ring focus:ring-slate-200 focus:ring-opacity-50 transition-all"
+                            className="block w-full px-4 py-3 rounded-xl bg-slate-50 border-slate-200 shadow-sm focus:border-slate-400 focus:ring focus:ring-slate-200/50 transition-all"
                             onChange={event => setPassword(event.target.value)}
                             required
                             autoComplete="current-password"
                         />
-                        {errors && (errors as any).password && (
-                            <p className="text-rose-500 text-xs mt-2 ml-1">{(errors as any).password}</p>
-                        )}
                     </div>
 
                     <div className="pt-2">

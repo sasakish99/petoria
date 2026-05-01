@@ -25,7 +25,7 @@
   input[type="number"],
   select,
   textarea {
-    @apply py-3 px-4 bg-slate-50 border-slate-200 rounded-xl focus:border-slate-400 focus:ring focus:ring-slate-200 focus:ring-opacity-50 transition-all outline-none;
+    @apply py-3 px-4 bg-slate-50 border-slate-200 rounded-xl focus:border-slate-400 focus:ring focus:ring-slate-200/50 transition-all outline-none;
   }
 
   select {

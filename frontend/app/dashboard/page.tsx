@@ -208,7 +208,7 @@ const Dashboard = () => {
                                                         pet.gender === 'female' ? 'bg-rose-50 text-rose-600' : 
                                                         'bg-slate-100 text-slate-500'
                                                     }`}>
-                                                        {pet.gender === 'male' ? '♂' : pet.gender === 'female' ? '♀' : '?'}
+                                                        {pet.gender === 'male' ? 'オス' : pet.gender === 'female' ? 'メス' : '不明'}
                                                     </span>
                                                 )}
                                             </div>
@@ -265,7 +265,7 @@ const Dashboard = () => {
                                                         pet.gender === 'female' ? 'text-rose-600' : 
                                                         'text-gray-500'
                                                     }`}>
-                                                        {pet.gender === 'male' ? '♂' : pet.gender === 'female' ? '♀' : '?'}
+                                                        {pet.gender === 'male' ? 'オス' : pet.gender === 'female' ? 'メス' : '不明'}
                                                     </span>
                                                 )}
                                             </div>
@@ -312,7 +312,7 @@ const Dashboard = () => {
                                                     activePet.gender === 'female' ? 'bg-rose-50 text-rose-600' : 
                                                     'bg-slate-100 text-slate-500'
                                                 }`}>
-                                                    {activePet.gender === 'male' ? '♂' : activePet.gender === 'female' ? '♀' : '?'}
+                                                    {activePet.gender === 'male' ? 'オス' : activePet.gender === 'female' ? 'メス' : '不明'}
                                                 </span>
                                             )}
                                             <p className="text-sm font-medium text-slate-500 truncate flex items-center gap-1.5">

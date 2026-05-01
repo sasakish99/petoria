@@ -94,7 +94,7 @@ const HealthLogModal = ({ pet, editingLog, onClose, onSuccess }: HealthLogModalP
                                 required
                                 value={formData.logged_at}
                                 onChange={e => setFormData({ ...formData, logged_at: e.target.value })}
-                                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:border-slate-400 focus:ring focus:ring-slate-200 focus:ring-opacity-50 outline-none transition-all font-bold text-slate-700"
+                                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:border-slate-400 focus:ring focus:ring-slate-200/50 outline-none transition-all font-bold text-slate-700"
                             />
                         </div>
 
@@ -138,7 +138,7 @@ const HealthLogModal = ({ pet, editingLog, onClose, onSuccess }: HealthLogModalP
                                 placeholder="30"
                                 value={formData.exercise_duration}
                                 onChange={e => setFormData({ ...formData, exercise_duration: e.target.value })}
-                                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:border-slate-400 focus:ring focus:ring-slate-200 focus:ring-opacity-50 outline-none transition-all font-bold text-slate-700"
+                                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:border-slate-400 focus:ring focus:ring-slate-200/50 outline-none transition-all font-bold text-slate-700"
                             />
                         </div>
 
@@ -148,7 +148,7 @@ const HealthLogModal = ({ pet, editingLog, onClose, onSuccess }: HealthLogModalP
                                 <select
                                     value={formData.stool_status}
                                     onChange={e => setFormData({ ...formData, stool_status: e.target.value })}
-                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:border-slate-400 focus:ring focus:ring-slate-200 focus:ring-opacity-50 outline-none transition-all font-bold text-slate-700 text-xs"
+                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:border-slate-400 focus:ring focus:ring-slate-200/50 outline-none transition-all font-bold text-slate-700 text-xs"
                                 >
                                     <option>普通</option>
                                     <option>硬め</option>
@@ -162,7 +162,7 @@ const HealthLogModal = ({ pet, editingLog, onClose, onSuccess }: HealthLogModalP
                                 <select
                                     value={formData.urine_status}
                                     onChange={e => setFormData({ ...formData, urine_status: e.target.value })}
-                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:border-slate-400 focus:ring focus:ring-slate-200 focus:ring-opacity-50 outline-none transition-all font-bold text-slate-700 text-xs"
+                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:border-slate-400 focus:ring focus:ring-slate-200/50 outline-none transition-all font-bold text-slate-700 text-xs"
                                 >
                                     <option>普通</option>
                                     <option>濃い</option>

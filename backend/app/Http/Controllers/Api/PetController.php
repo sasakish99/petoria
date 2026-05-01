@@ -257,7 +257,7 @@ class PetController extends Controller
             ]);
 
             return response()->json([
-                'error' => 'AI analysis failed.',
+                'error' => 'AI解析に失敗しました。',
                 'message' => $e->getMessage(),
                 'diagnosis' => $diagnosis
             ], 500);

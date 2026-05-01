@@ -137,7 +137,7 @@ export default function ProfilePage() {
                   required
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-slate-400 focus:ring focus:ring-slate-200 focus:ring-opacity-50 transition-all text-slate-900"
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-slate-400 focus:ring focus:ring-slate-200/50 transition-all text-slate-900"
                   placeholder="飼い主さんのお名前"
                 />
               </div>
@@ -168,7 +168,7 @@ export default function ProfilePage() {
                     type="text"
                     value={formData.zipcode}
                     onChange={(e) => setFormData({ ...formData, zipcode: e.target.value.replace(/[^0-9]/g, '') })}
-                    className="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-slate-400 focus:ring focus:ring-slate-200 focus:ring-opacity-50 transition-all text-slate-900"
+                    className="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-slate-400 focus:ring focus:ring-slate-200/50 transition-all text-slate-900"
                     placeholder="7桁の数字（ハイフンなし）"
                     maxLength={7}
                   />
@@ -193,7 +193,7 @@ export default function ProfilePage() {
                   type="text"
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-slate-400 focus:ring focus:ring-slate-200 focus:ring-opacity-50 transition-all text-slate-900"
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-slate-400 focus:ring focus:ring-slate-200/50 transition-all text-slate-900"
                   placeholder="例: 東京都渋谷区代々木"
                 />
                 <p className="text-[12px] text-slate-400 mt-2 ml-1 leading-relaxed">

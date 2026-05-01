@@ -150,7 +150,7 @@ const AiDiagnose = () => {
                                         id="target_part"
                                         value={targetPart}
                                         onChange={(e) => setTargetPart(e.target.value)}
-                                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-slate-400 focus:ring focus:ring-slate-200 focus:ring-opacity-50 transition-all font-bold text-slate-700 outline-none"
+                                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-slate-400 focus:ring focus:ring-slate-200/50 transition-all font-bold text-slate-700 outline-none"
                                     >
                                         <option value="overall">全体（おまかせ）</option>
                                         <option value="eyes">目・瞳（充血、にごりなど）</option>
