@@ -17,7 +17,7 @@ const Header = () => {
                         <Link href="/dashboard" className="flex items-center group transition-transform duration-200 hover:scale-[1.02]">
                             <div className="flex items-center">
                                 <img src="/logo.png" alt="Petoria Logo" className="h-11 sm:h-12 w-auto mr-3 drop-shadow-[0_2px_4px_rgba(0,0,0,0.1)]" />
-                                <span className="text-2xl sm:text-3xl font-black bg-gradient-to-br from-indigo-600 via-slate-800 to-slate-500 bg-clip-text text-transparent tracking-tight">
+                                <span className="text-2xl sm:text-3xl font-black bg-gradient-to-r from-slate-800 to-slate-500 bg-clip-text text-transparent tracking-tight">
                                     Petoria
                                 </span>
                             </div>

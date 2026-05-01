@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Save, Utensils, Activity, Trash2, Clipboard, Scale, Calendar, Loader2 } from 'lucide-react';
 import axios from '@/lib/axios';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 
 interface HealthLogModalProps {
     pet: any;
@@ -15,14 +15,38 @@ interface HealthLogModalProps {
 const HealthLogModal = ({ pet, editingLog, onClose, onSuccess }: HealthLogModalProps) => {
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
-        meal_amount: editingLog?.meal_amount || '',
-        stool_status: editingLog?.stool_status || '普通',
-        urine_status: editingLog?.urine_status || '普通',
-        exercise_duration: editingLog?.exercise_duration?.toString() || '',
-        weight: editingLog?.weight?.toString() || '',
-        memo: editingLog?.memo || '',
-        logged_at: editingLog?.logged_at || format(new Date(), 'yyyy-MM-dd'),
+        meal_amount: '',
+        stool_status: '普通',
+        urine_status: '普通',
+        exercise_duration: '',
+        weight: '',
+        memo: '',
+        logged_at: format(new Date(), 'yyyy-MM-dd'),
     });
+
+    useEffect(() => {
+        if (editingLog) {
+            setFormData({
+                meal_amount: editingLog.meal_amount || '',
+                stool_status: editingLog.stool_status || '普通',
+                urine_status: editingLog.urine_status || '普通',
+                exercise_duration: editingLog.exercise_duration?.toString() || '',
+                weight: editingLog.weight?.toString() || '',
+                memo: editingLog.memo || '',
+                logged_at: editingLog.logged_at ? format(parseISO(editingLog.logged_at), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
+            });
+        } else {
+            setFormData({
+                meal_amount: '',
+                stool_status: '普通',
+                urine_status: '普通',
+                exercise_duration: '',
+                weight: '',
+                memo: '',
+                logged_at: format(new Date(), 'yyyy-MM-dd'),
+            });
+        }
+    }, [editingLog]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

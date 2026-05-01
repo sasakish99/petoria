@@ -47,6 +47,7 @@ import HealthLogModal from '@/components/HealthLogModal';
 const Dashboard = () => {
     const { user, logout } = useAuth({ middleware: 'auth' });
     const [selectedPetForLog, setSelectedPetForLog] = useState<any>(null);
+    const [editingLog, setEditingLog] = useState<any>(null);
     const [activePetId, setActivePetId] = useState<number | null>(null);
     const [isHospitalsExpanded, setIsHospitalsExpanded] = useState(false);
     const [isWeatherExpanded, setIsWeatherExpanded] = useState(false);
@@ -146,7 +147,7 @@ const Dashboard = () => {
         for (let i = 6; i >= 0; i--) {
             const date = subDays(today, i);
             const dateStr = format(date, 'yyyy-MM-dd');
-            const log = healthLogs.find(l => isSameDay(new Date(l.logged_at), date));
+            const log = healthLogs.find(l => isSameDay(parseISO(l.logged_at), date));
             
             data.push({
                 date: dateStr,
@@ -223,7 +224,7 @@ const Dashboard = () => {
     const getLatestWeight = (healthLogs: any[]) => {
         const sortedLogs = [...healthLogs]
             .filter(log => log.weight)
-            .sort((a, b) => new Date(b.logged_at).getTime() - new Date(a.logged_at).getTime());
+            .sort((a, b) => parseISO(b.logged_at).getTime() - parseISO(a.logged_at).getTime());
         return sortedLogs.length > 0 ? sortedLogs[0].weight : null;
     };
 
@@ -478,13 +479,22 @@ const Dashboard = () => {
                                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
                                                     <XAxis 
                                                         dataKey="logged_at" 
-                                                        tickFormatter={(str) => format(new Date(str), 'MM/dd(E)', { locale: ja })}
+                                                        tickFormatter={(str) => format(parseISO(str), 'MM/dd(E)', { locale: ja })}
                                                         tick={{ fontSize: 9, fill: '#9ca3af' }}
                                                         axisLine={false}
                                                         tickLine={false}
                                                     />
                                                     <YAxis 
-                                                        domain={['auto', 'auto']} 
+                                                        domain={[
+                                                            (dataMin: number) => {
+                                                                const min = activePet.target_weight ? Math.min(dataMin, activePet.target_weight) : dataMin;
+                                                                return Math.floor(min * 0.95 * 10) / 10;
+                                                            },
+                                                            (dataMax: number) => {
+                                                                const max = activePet.target_weight ? Math.max(dataMax, activePet.target_weight) : dataMax;
+                                                                return Math.ceil(max * 1.05 * 10) / 10;
+                                                            }
+                                                        ]} 
                                                         tick={{ fontSize: 9, fill: '#9ca3af' }}
                                                         axisLine={false}
                                                         tickLine={false}
@@ -492,7 +502,7 @@ const Dashboard = () => {
                                                     />
                                                     <Tooltip 
                                                         contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 2px 4px -1px rgb(0 0 0 / 0.1)', fontSize: '10px' }}
-                                                        labelFormatter={(label) => format(new Date(label), 'yyyy/MM/dd(E)', { locale: ja })}
+                                                        labelFormatter={(label) => format(parseISO(label), 'yyyy/MM/dd(E)', { locale: ja })}
                                                         formatter={(value: any) => {
                                                             const numericValue = Number(value);
                                                             const labels = [`${numericValue} kg`, '体重'];
@@ -508,13 +518,15 @@ const Dashboard = () => {
                                                         <ReferenceLine 
                                                             y={activePet.target_weight} 
                                                             stroke="#ef4444" 
-                                                            strokeDasharray="3 3"
+                                                            strokeDasharray="4 4"
+                                                            strokeWidth={1.5}
                                                             label={{ 
                                                                 value: `目標: ${activePet.target_weight}kg`, 
-                                                                position: 'right', 
+                                                                position: 'insideBottomRight', 
                                                                 fill: '#ef4444',
-                                                                fontSize: 8,
-                                                                fontWeight: 'bold'
+                                                                fontSize: 10,
+                                                                fontWeight: 'black',
+                                                                offset: 10
                                                             }} 
                                                         />
                                                     )}
@@ -692,9 +704,16 @@ const Dashboard = () => {
                                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                                             {activePet.health_logs && activePet.health_logs.length > 0 ? (
                                                 activePet.health_logs.slice(0, 5).map((log: any) => (
-                                                    <div key={log.id} className="p-4 bg-white/70 backdrop-blur-lg rounded-2xl shadow-lg shadow-slate-200/50 border border-white hover:bg-white hover:scale-[1.02] transition-all group">
+                                                    <button 
+                                                        key={log.id} 
+                                                        onClick={() => {
+                                                            setSelectedPetForLog(activePet);
+                                                            setEditingLog(log);
+                                                        }}
+                                                        className="p-4 bg-white/70 backdrop-blur-lg rounded-2xl shadow-lg shadow-slate-200/50 border border-white hover:bg-white hover:scale-[1.02] transition-all group text-left w-full flex flex-col items-stretch"
+                                                    >
                                                         <div className="text-[10px] font-black text-slate-400 mb-3 border-b border-slate-100/50 pb-2 uppercase tracking-widest group-hover:text-slate-500 transition-colors">
-                                                            {format(new Date(log.logged_at), 'yyyy/MM/dd')}
+                                                            {format(parseISO(log.logged_at), 'yyyy/MM/dd')}
                                                         </div>
                                                         <div className="space-y-2.5">
                                                             {log.meal_amount && (
@@ -730,7 +749,7 @@ const Dashboard = () => {
                                                                 </span>
                                                             </div>
                                                         </div>
-                                                    </div>
+                                                    </button>
                                                 ))
                                             ) : (
                                                 <div className="col-span-full py-12 bg-white/50 backdrop-blur-sm rounded-3xl border-2 border-dashed border-slate-200/50 text-center flex flex-col items-center justify-center shadow-inner">
@@ -1028,7 +1047,11 @@ const Dashboard = () => {
             {selectedPetForLog && (
                 <HealthLogModal 
                     pet={selectedPetForLog} 
-                    onClose={() => setSelectedPetForLog(null)} 
+                    editingLog={editingLog}
+                    onClose={() => {
+                        setSelectedPetForLog(null);
+                        setEditingLog(null);
+                    }} 
                     onSuccess={() => mutate()}
                 />
             )}
