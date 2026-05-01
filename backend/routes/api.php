@@ -8,6 +8,8 @@ use App\Http\Controllers\Api\PetController;
 use App\Http\Controllers\Api\HealthLogController;
 use App\Http\Controllers\Api\WeightLogController;
 use App\Http\Controllers\Api\MedicalEventController;
+use App\Http\Controllers\Api\MedicalReceiptController;
+use App\Http\Controllers\Api\HealthCheckupResultController;
 use App\Http\Controllers\Api\VaccinationCertificateController;
 use App\Http\Controllers\Api\BreedController;
 
@@ -48,14 +50,31 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::apiResource('pets', PetController::class);
     Route::post('pets/{pet}/ai-diagnose', [PetController::class, 'aiDiagnose']);
     Route::delete('pets/{pet}/ai-diagnoses', [PetController::class, 'destroyAiDiagnoses']);
+    Route::delete('pets/{pet}/health-logs/bulk', [HealthLogController::class, 'bulkDestroy']);
     Route::get('pets/{pet}/health-logs', [HealthLogController::class, 'index']);
     Route::post('pets/{pet}/health-logs', [HealthLogController::class, 'store']);
     Route::put('pets/{pet}/health-logs/{healthLog}', [HealthLogController::class, 'update']);
     Route::delete('pets/{pet}/health-logs/{healthLog}', [HealthLogController::class, 'destroy']);
     Route::post('pets/{pet}/weight-logs', [WeightLogController::class, 'store']);
     Route::post('pets/{pet}/medical-events', [MedicalEventController::class, 'store']);
+    Route::delete('pets/{pet}/medical-events/bulk', [MedicalEventController::class, 'bulkDestroy']);
+    Route::delete('pets/{pet}/medical-events/{medicalEvent}', [MedicalEventController::class, 'destroy']);
     Route::post('pets/{pet}/vaccination-certificates/analyze', [VaccinationCertificateController::class, 'analyze']);
     Route::post('pets/{pet}/vaccination-certificates', [VaccinationCertificateController::class, 'store']);
+
+    Route::delete('pets/{pet}/medical-receipts/bulk', [MedicalReceiptController::class, 'bulkDestroy']);
+    Route::get('pets/{pet}/medical-receipts', [MedicalReceiptController::class, 'index']);
+    Route::post('pets/{pet}/medical-receipts/upload', [MedicalReceiptController::class, 'uploadAndAnalyze']);
+    Route::get('pets/{pet}/medical-receipts/{medicalReceipt}', [MedicalReceiptController::class, 'show']);
+    Route::put('pets/{pet}/medical-receipts/{medicalReceipt}', [MedicalReceiptController::class, 'update']);
+    Route::delete('pets/{pet}/medical-receipts/{medicalReceipt}', [MedicalReceiptController::class, 'destroy']);
+
+    Route::delete('pets/{pet}/health-checkup-results/bulk', [HealthCheckupResultController::class, 'bulkDestroy']);
+    Route::get('pets/{pet}/health-checkup-results', [HealthCheckupResultController::class, 'index']);
+    Route::post('pets/{pet}/health-checkup-results/upload', [HealthCheckupResultController::class, 'uploadAndAnalyze']);
+    Route::get('pets/{pet}/health-checkup-results/{healthCheckupResult}', [HealthCheckupResultController::class, 'show']);
+    Route::put('pets/{pet}/health-checkup-results/{healthCheckupResult}', [HealthCheckupResultController::class, 'update']);
+    Route::delete('pets/{pet}/health-checkup-results/{healthCheckupResult}', [HealthCheckupResultController::class, 'destroy']);
 });
 
 require __DIR__.'/auth.php';

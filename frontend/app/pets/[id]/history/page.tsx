@@ -21,7 +21,8 @@ import {
     Edit2,
     Droplets,
     Plus,
-    Clipboard
+    Clipboard,
+    History
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ja } from 'date-fns/locale';
@@ -32,18 +33,25 @@ export default function PetHistoryPage({ params }: { params: Promise<{ id: strin
     const router = useRouter();
     const { user } = useAuth({ middleware: 'auth' });
 
-    const [activeTab, setActiveTab] = useState<'ai' | 'health'>('ai');
+    const [activeTab, setActiveTab] = useState<'ai' | 'health' | 'vaccine' | 'receipt' | 'checkup'>('ai');
     const [pet, setPet] = useState<any>(null);
     const [aiHistory, setAiHistory] = useState<any[]>([]);
     const [healthLogs, setHealthLogs] = useState<any[]>([]);
+    const [vaccineHistory, setVaccineHistory] = useState<any[]>([]);
+    const [receiptHistory, setReceiptHistory] = useState<any[]>([]);
+    const [checkupHistory, setCheckupHistory] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
-    // AI診断用状態
+    // 詳細表示用状態
     const [selectedDiagnosis, setSelectedDiagnosis] = useState<any>(null);
-    const [isAiEditMode, setIsAiEditMode] = useState(false);
-    const [selectedAiIds, setSelectedAiIds] = useState<number[]>([]);
+    const [selectedReceipt, setSelectedReceipt] = useState<any>(null);
+    const [selectedCheckup, setSelectedCheckup] = useState<any>(null);
+    const [selectedVaccine, setSelectedVaccine] = useState<any>(null);
+
+    const [isEditMode, setIsEditMode] = useState(false);
+    const [selectedIds, setSelectedIds] = useState<number[]>([]);
     const [isDeleting, setIsDeleting] = useState(false);
-    const [showAiDeleteConfirm, setShowAiDeleteConfirm] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
     // 健康記録用状態
     const [isHealthModalOpen, setIsHealthModalOpen] = useState(false);
@@ -63,6 +71,14 @@ export default function PetHistoryPage({ params }: { params: Promise<{ id: strin
             ) : [];
             setAiHistory(sortedAiHistory);
             setHealthLogs(logsRes.data);
+
+            const vaccines = petRes.data.medical_events ? petRes.data.medical_events.filter((e: any) => e.vaccine_type !== null).sort((a: any, b: any) =>
+                new Date(b.event_date).getTime() - new Date(a.event_date).getTime()
+            ) : [];
+            setVaccineHistory(vaccines);
+
+            setReceiptHistory(petRes.data.medical_receipts || []);
+            setCheckupHistory(petRes.data.health_checkup_results || []);
         } catch (err) {
             console.error(err);
         } finally {
@@ -74,6 +90,11 @@ export default function PetHistoryPage({ params }: { params: Promise<{ id: strin
         fetchData();
     }, [petId]);
 
+    useEffect(() => {
+        setIsEditMode(false);
+        setSelectedIds([]);
+    }, [activeTab]);
+
     if (!user || loading) {
         return <div className="min-h-screen flex items-center justify-center">読み込み中...</div>;
     }
@@ -82,35 +103,55 @@ export default function PetHistoryPage({ params }: { params: Promise<{ id: strin
         return <div className="min-h-screen flex items-center justify-center">うちの子が見つかりませんでした。</div>;
     }
 
-    // AI診断関連のハンドラー
-    const toggleAiSelect = (id: number) => {
-        setSelectedAiIds(prev =>
+    // 選択関連のハンドラー
+    const toggleSelect = (id: number) => {
+        setSelectedIds(prev =>
             prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
         );
     };
 
-    const toggleAiSelectAll = () => {
-        if (selectedAiIds.length === aiHistory.length) {
-            setSelectedAiIds([]);
+    const toggleSelectAll = () => {
+        let currentHistory: any[] = [];
+        if (activeTab === 'ai') currentHistory = aiHistory;
+        else if (activeTab === 'health') currentHistory = healthLogs;
+        else if (activeTab === 'vaccine') currentHistory = vaccineHistory;
+        else if (activeTab === 'receipt') currentHistory = receiptHistory;
+        else if (activeTab === 'checkup') currentHistory = checkupHistory;
+
+        if (selectedIds.length === currentHistory.length) {
+            setSelectedIds([]);
         } else {
-            setSelectedAiIds(aiHistory.map(item => item.id));
+            setSelectedIds(currentHistory.map(item => item.id));
         }
     };
 
-    const handleAiDelete = async () => {
-        if (selectedAiIds.length === 0) return;
+    const handleBulkDelete = async () => {
+        if (selectedIds.length === 0) return;
 
         setIsDeleting(true);
         try {
-            await axios.delete(`/api/pets/${petId}/ai-diagnoses`, {
-                data: { ids: selectedAiIds }
+            let endpoint = '';
+            let payload = { ids: selectedIds };
+            
+            if (activeTab === 'ai') endpoint = `/api/pets/${petId}/ai-diagnoses`;
+            else if (activeTab === 'health') endpoint = `/api/pets/${petId}/health-logs/bulk`;
+            else if (activeTab === 'vaccine') endpoint = `/api/pets/${petId}/medical-events/bulk`;
+            else if (activeTab === 'receipt') endpoint = `/api/pets/${petId}/medical-receipts/bulk`;
+            else if (activeTab === 'checkup') endpoint = `/api/pets/${petId}/health-checkup-results/bulk`;
+
+            await axios.delete(endpoint, {
+                data: payload
             });
 
             await fetchData();
-            setSelectedAiIds([]);
-            setIsAiEditMode(false);
-            setShowAiDeleteConfirm(false);
+            setSelectedIds([]);
+            setIsEditMode(false);
+            setShowDeleteConfirm(false);
+            // 詳細表示中なら閉じる
             setSelectedDiagnosis(null);
+            setSelectedReceipt(null);
+            setSelectedCheckup(null);
+            setSelectedVaccine(null);
         } catch (err) {
             console.error(err);
             alert('削除に失敗しました。');
@@ -125,14 +166,12 @@ export default function PetHistoryPage({ params }: { params: Promise<{ id: strin
         setIsHealthModalOpen(true);
     };
 
-    const handleHealthAdd = () => {
-        setEditingLog(null);
-        setIsHealthModalOpen(true);
-    };
-
     const handleBack = () => {
-        if (selectedDiagnosis) {
+        if (selectedDiagnosis || selectedReceipt || selectedCheckup || selectedVaccine) {
             setSelectedDiagnosis(null);
+            setSelectedReceipt(null);
+            setSelectedCheckup(null);
+            setSelectedVaccine(null);
         } else {
             router.push('/dashboard');
         }
@@ -151,56 +190,82 @@ export default function PetHistoryPage({ params }: { params: Promise<{ id: strin
                             <ChevronLeft className="h-6 w-6 text-gray-600" />
                         </button>
                         <h1 className="text-xl font-bold text-gray-900">
-                            {selectedDiagnosis ? '診断詳細' : `${pet.name} の履歴`}
+                            {selectedDiagnosis || selectedReceipt || selectedCheckup || selectedVaccine ? '詳細' : `${pet.name} の履歴`}
                         </h1>
                     </div>
-                    {!selectedDiagnosis && activeTab === 'ai' && aiHistory.length > 0 && (
-                        <button
-                            onClick={() => isAiEditMode ? setIsAiEditMode(false) : setIsAiEditMode(true)}
-                            className={`text-sm font-medium ${isAiEditMode ? 'text-gray-600' : 'text-indigo-600'} hover:opacity-80 flex items-center`}
-                        >
-                            {isAiEditMode ? 'キャンセル' : (
-                                <><Trash2 className="h-4 w-4 mr-1" />整理する</>
-                            )}
-                        </button>
-                    )}
-                    {!selectedDiagnosis && activeTab === 'health' && (
-                        <button
-                            onClick={handleHealthAdd}
-                            className="p-2 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition-colors shadow-sm"
-                        >
-                            <Plus className="h-5 w-5" />
-                        </button>
-                    )}
+                    <div className="flex items-center gap-3">
+                        {!selectedDiagnosis && !selectedReceipt && !selectedCheckup && !selectedVaccine && (
+                            <button
+                                onClick={() => setIsEditMode(!isEditMode)}
+                                className={`text-sm font-medium ${isEditMode ? 'text-gray-600' : 'text-indigo-600'} hover:opacity-80 flex items-center`}
+                            >
+                                {isEditMode ? 'キャンセル' : (
+                                    <><Trash2 className="h-4 w-4 mr-1" />整理する</>
+                                )}
+                            </button>
+                        )}
+                    </div>
                 </div>
 
-                {/* タブ切り替え (詳細表示時は隠す) */}
-                {!selectedDiagnosis && (
-                    <div className="max-w-3xl mx-auto px-4 flex border-b border-gray-100">
-                        <button
-                            onClick={() => setActiveTab('ai')}
-                            className={`flex-1 py-4 text-sm font-bold border-b-2 transition-colors flex items-center justify-center gap-2 ${
-                                activeTab === 'ai'
-                                    ? 'border-indigo-600 text-indigo-600'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                            }`}
-                        >
-                            <Activity className="h-4 w-4" />
-                            AI診断
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('health')}
-                            className={`flex-1 py-4 text-sm font-bold border-b-2 transition-colors flex items-center justify-center gap-2 ${
-                                activeTab === 'health'
-                                    ? 'border-indigo-600 text-indigo-600'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                            }`}
-                        >
-                            <ClipboardList className="h-4 w-4" />
-                            健康記録
-                        </button>
-                    </div>
-                )}
+                    {!selectedDiagnosis && !selectedReceipt && !selectedCheckup && !selectedVaccine && (
+                        <div className="max-w-3xl mx-auto px-4 flex border-b border-gray-100 overflow-x-auto scrollbar-hide">
+                            <button
+                                onClick={() => setActiveTab('ai')}
+                                className={`flex-shrink-0 px-4 py-4 text-sm font-bold border-b-2 transition-colors flex items-center justify-center gap-2 ${
+                                    activeTab === 'ai'
+                                        ? 'border-indigo-600 text-indigo-600'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                                }`}
+                            >
+                                <Activity className="h-4 w-4" />
+                                AI健康診断
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('health')}
+                                className={`flex-shrink-0 px-4 py-4 text-sm font-bold border-b-2 transition-colors flex items-center justify-center gap-2 ${
+                                    activeTab === 'health'
+                                        ? 'border-indigo-600 text-indigo-600'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                                }`}
+                            >
+                                <ClipboardList className="h-4 w-4" />
+                                健康記録
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('vaccine')}
+                                className={`flex-shrink-0 px-4 py-4 text-sm font-bold border-b-2 transition-colors flex items-center justify-center gap-2 ${
+                                    activeTab === 'vaccine'
+                                        ? 'border-indigo-600 text-indigo-600'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                                }`}
+                            >
+                                <CheckSquare className="h-4 w-4" />
+                                ワクチン
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('receipt')}
+                                className={`flex-shrink-0 px-4 py-4 text-sm font-bold border-b-2 transition-colors flex items-center justify-center gap-2 ${
+                                    activeTab === 'receipt'
+                                        ? 'border-indigo-600 text-indigo-600'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                                }`}
+                            >
+                                <Scale className="h-4 w-4" />
+                                診療明細
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('checkup')}
+                                className={`flex-shrink-0 px-4 py-4 text-sm font-bold border-b-2 transition-colors flex items-center justify-center gap-2 ${
+                                    activeTab === 'checkup'
+                                        ? 'border-indigo-600 text-indigo-600'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                                }`}
+                            >
+                                <Clipboard className="h-4 w-4" />
+                                健康診断
+                            </button>
+                        </div>
+                    )}
             </div>
 
             <main className="max-w-3xl mx-auto px-4 py-6">
@@ -223,8 +288,8 @@ export default function PetHistoryPage({ params }: { params: Promise<{ id: strin
                                     </div>
                                     <button
                                         onClick={() => {
-                                            setSelectedAiIds([selectedDiagnosis.id]);
-                                            setShowAiDeleteConfirm(true);
+                                            setSelectedIds([selectedDiagnosis.id]);
+                                            setShowDeleteConfirm(true);
                                         }}
                                         className="text-red-500 hover:text-red-700 p-2"
                                     >
@@ -239,25 +304,202 @@ export default function PetHistoryPage({ params }: { params: Promise<{ id: strin
                             </div>
                         </div>
                     </div>
+                ) : selectedReceipt ? (
+                    /* 診療明細詳細 */
+                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                            <div className="aspect-video w-full bg-gray-100 flex items-center justify-center overflow-hidden">
+                                <img
+                                    src={`${process.env.NEXT_PUBLIC_BACKEND_URL}/storage/${selectedReceipt.image_path}`}
+                                    alt="診療明細画像"
+                                    className="w-full h-full object-contain"
+                                />
+                            </div>
+                            <div className="p-6 md:p-8">
+                                <div className="flex items-center justify-between mb-6">
+                                    <div>
+                                        <h2 className="text-xl font-bold text-gray-900">{selectedReceipt.clinic_name || '病院名不明'}</h2>
+                                        <div className="flex items-center text-sm text-gray-500 mt-1">
+                                            <Calendar className="h-4 w-4 mr-2" />
+                                            {format(new Date(selectedReceipt.receipt_date), 'yyyy年MM月dd日', { locale: ja })}
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="text-2xl font-bold text-indigo-600">
+                                            ¥{selectedReceipt.total_amount?.toLocaleString()}
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                setSelectedIds([selectedReceipt.id]);
+                                                setShowDeleteConfirm(true);
+                                            }}
+                                            className="text-red-500 hover:text-red-700 p-2 mt-2"
+                                        >
+                                            <Trash2 className="h-5 w-5 ml-auto" />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {selectedReceipt.items && (
+                                    <div className="border-t pt-6">
+                                        <h3 className="font-bold text-gray-900 mb-4">明細項目</h3>
+                                        <div className="space-y-3">
+                                            {(typeof selectedReceipt.items === 'string' ? JSON.parse(selectedReceipt.items) : selectedReceipt.items).map((item: any, idx: number) => (
+                                                <div key={idx} className="flex justify-between text-sm">
+                                                    <span className="text-gray-700">{item.name}</span>
+                                                    <span className="text-gray-900 font-medium">¥{item.price?.toLocaleString()}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                ) : selectedCheckup ? (
+                    /* 健康診断詳細 */
+                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                            <div className="aspect-video w-full bg-gray-100 flex items-center justify-center overflow-hidden">
+                                <img
+                                    src={`${process.env.NEXT_PUBLIC_BACKEND_URL}/storage/${selectedCheckup.image_path}`}
+                                    alt="健康診断画像"
+                                    className="w-full h-full object-contain"
+                                />
+                            </div>
+                            <div className="p-6 md:p-8">
+                                <div className="flex items-center justify-between mb-6">
+                                    <div>
+                                        <h2 className="text-xl font-bold text-gray-900">{selectedCheckup.clinic_name || '病院名不明'}</h2>
+                                        <div className="flex items-center text-sm text-gray-500 mt-1">
+                                            <Calendar className="h-4 w-4 mr-2" />
+                                            {format(new Date(selectedCheckup.checkup_date), 'yyyy年MM月dd日', { locale: ja })}
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => {
+                                            setSelectedIds([selectedCheckup.id]);
+                                            setShowDeleteConfirm(true);
+                                        }}
+                                        className="text-red-500 hover:text-red-700 p-2"
+                                    >
+                                        <Trash2 className="h-5 w-5" />
+                                    </button>
+                                </div>
+
+                                {selectedCheckup.results && (
+                                    <div className="border-t pt-6">
+                                        <h3 className="font-bold text-gray-900 mb-4">検査結果</h3>
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-sm">
+                                                <thead>
+                                                    <tr className="border-b">
+                                                        <th className="text-left py-2 text-gray-500">項目</th>
+                                                        <th className="text-right py-2 text-gray-500">数値</th>
+                                                        <th className="text-right py-2 text-gray-500">基準値</th>
+                                                        <th className="text-center py-2 text-gray-500">判定</th>
+                                                        <th className="text-center py-2 text-gray-500">範囲外</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {(typeof selectedCheckup.results === 'string' ? JSON.parse(selectedCheckup.results) : selectedCheckup.results).map((item: any, idx: number) => (
+                                                        <tr key={idx} className="border-b last:border-0">
+                                                            <td className="py-3 text-gray-700">{item.item_name || item.item}</td>
+                                                            <td className="py-3 text-right font-bold">{item.value}{item.unit}</td>
+                                                            <td className="py-3 text-right text-gray-500">{item.reference_range}</td>
+                                                            <td className="py-3 text-center">
+                                                                <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                                                                    item.evaluation === '正常' || item.evaluation === 'A' || item.judgment === '正常'
+                                                                        ? 'bg-green-100 text-green-700'
+                                                                        : 'bg-red-100 text-red-700'
+                                                                }`}>
+                                                                    {item.evaluation || item.judgment}
+                                                                </span>
+                                                            </td>
+                                                            <td className="py-3 text-center">
+                                                                {item.is_out_of_range && (
+                                                                    <span className="text-red-600 font-bold">▲</span>
+                                                                )}
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                ) : selectedVaccine ? (
+                    /* ワクチン詳細 */
+                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                            {selectedVaccine.certificate_path && (
+                                <div className="aspect-video w-full bg-gray-100 flex items-center justify-center overflow-hidden">
+                                    <img
+                                        src={`${process.env.NEXT_PUBLIC_BACKEND_URL}/storage/${selectedVaccine.certificate_path}`}
+                                        alt="証明書画像"
+                                        className="w-full h-full object-contain"
+                                    />
+                                </div>
+                            )}
+                            <div className="p-6 md:p-8">
+                                <div className="flex items-center justify-between mb-6">
+                                    <div>
+                                        <h2 className="text-xl font-bold text-gray-900">{selectedVaccine.title}</h2>
+                                        <div className="flex items-center text-sm text-gray-500 mt-1">
+                                            <Calendar className="h-4 w-4 mr-2" />
+                                            接種日: {format(new Date(selectedVaccine.event_date), 'yyyy年MM月dd日', { locale: ja })}
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => {
+                                            setSelectedIds([selectedVaccine.id]);
+                                            setShowDeleteConfirm(true);
+                                        }}
+                                        className="text-red-500 hover:text-red-700 p-2"
+                                    >
+                                        <Trash2 className="h-5 w-5" />
+                                    </button>
+                                </div>
+                                <div className="space-y-4">
+                                    <div className="flex justify-between items-center py-3 border-b border-gray-50">
+                                        <span className="text-gray-500 text-sm">病院名</span>
+                                        <span className="text-gray-900 font-medium">{selectedVaccine.clinic_name || '-'}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center py-3 border-b border-gray-50">
+                                        <span className="text-gray-500 text-sm">次回の予定</span>
+                                        <span className="text-indigo-600 font-bold">{selectedVaccine.next_event_date ? format(new Date(selectedVaccine.next_event_date), 'yyyy年MM月dd日') : '-'}</span>
+                                    </div>
+                                    {selectedVaccine.notes && (
+                                        <div className="mt-4 p-4 bg-gray-50 rounded-xl">
+                                            <p className="text-sm text-gray-600 whitespace-pre-wrap">{selectedVaccine.notes}</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 ) : activeTab === 'ai' ? (
                     /* AI診断一覧 */
                     <div className="space-y-4">
-                        {isAiEditMode && aiHistory.length > 0 && (
+                        {isEditMode && aiHistory.length > 0 && (
                             <div className="flex items-center justify-between bg-indigo-50 p-4 rounded-xl border border-indigo-100 mb-4">
                                 <button
-                                    onClick={toggleAiSelectAll}
+                                    onClick={toggleSelectAll}
                                     className="flex items-center text-sm font-medium text-indigo-700"
                                 >
-                                    {selectedAiIds.length === aiHistory.length ? (
+                                    {selectedIds.length === aiHistory.length ? (
                                         <CheckSquare className="h-5 w-5 mr-2" />
                                     ) : (
                                         <Square className="h-5 w-5 mr-2" />
                                     )}
-                                    すべて選択 ({selectedAiIds.length})
+                                    すべて選択 ({selectedIds.length})
                                 </button>
                                 <button
-                                    onClick={() => setShowAiDeleteConfirm(true)}
-                                    disabled={selectedAiIds.length === 0}
+                                    onClick={() => setShowDeleteConfirm(true)}
+                                    disabled={selectedIds.length === 0}
                                     className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors text-sm font-bold shadow-sm"
                                 >
                                     <Trash2 className="h-4 w-4 mr-2" />
@@ -274,12 +516,12 @@ export default function PetHistoryPage({ params }: { params: Promise<{ id: strin
                         ) : (
                             aiHistory.map((item) => (
                                 <div key={item.id} className="relative flex items-center group w-full overflow-hidden">
-                                    {isAiEditMode && (
+                                    {isEditMode && (
                                         <button
-                                            onClick={() => toggleAiSelect(item.id)}
+                                            onClick={() => toggleSelect(item.id)}
                                             className="mr-3 p-1 text-indigo-600 flex-shrink-0"
                                         >
-                                            {selectedAiIds.includes(item.id) ? (
+                                            {selectedIds.includes(item.id) ? (
                                                 <CheckSquare className="h-6 w-6" />
                                             ) : (
                                                 <Square className="h-6 w-6" />
@@ -287,10 +529,10 @@ export default function PetHistoryPage({ params }: { params: Promise<{ id: strin
                                         </button>
                                     )}
                                     <button
-                                        onClick={() => isAiEditMode ? toggleAiSelect(item.id) : setSelectedDiagnosis(item)}
+                                        onClick={() => isEditMode ? toggleSelect(item.id) : setSelectedDiagnosis(item)}
                                         className={`flex-grow min-w-0 bg-white p-4 rounded-xl border border-gray-100 shadow-sm transition-all flex items-center space-x-4 text-left ${
-                                            isAiEditMode
-                                                ? (selectedAiIds.includes(item.id) ? 'border-indigo-300 bg-indigo-50/30' : 'hover:border-gray-300')
+                                            isEditMode
+                                                ? (selectedIds.includes(item.id) ? 'border-indigo-300 bg-indigo-50/30' : 'hover:border-gray-300')
                                                 : 'hover:border-indigo-300 hover:shadow-md'
                                         }`}
                                     >
@@ -313,7 +555,243 @@ export default function PetHistoryPage({ params }: { params: Promise<{ id: strin
                                                 {item.result_text.replace(/#|【|】/g, '').split('\n').filter((line: string) => line.trim().length > 0).slice(1).join(' ')}
                                             </p>
                                         </div>
-                                        {!isAiEditMode && <ChevronRight className="h-5 w-5 text-gray-400" />}
+                                        {!isEditMode && <ChevronRight className="h-5 w-5 text-gray-400" />}
+                                    </button>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                ) : activeTab === 'vaccine' ? (
+                    /* ワクチン一覧 */
+                    <div className="space-y-4">
+                        {isEditMode && vaccineHistory.length > 0 && (
+                            <div className="flex items-center justify-between bg-indigo-50 p-4 rounded-xl border border-indigo-100 mb-4">
+                                <button
+                                    onClick={toggleSelectAll}
+                                    className="flex items-center text-sm font-medium text-indigo-700"
+                                >
+                                    {selectedIds.length === vaccineHistory.length ? (
+                                        <CheckSquare className="h-5 w-5 mr-2" />
+                                    ) : (
+                                        <Square className="h-5 w-5 mr-2" />
+                                    )}
+                                    すべて選択 ({selectedIds.length})
+                                </button>
+                                <button
+                                    onClick={() => setShowDeleteConfirm(true)}
+                                    disabled={selectedIds.length === 0}
+                                    className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors text-sm font-bold shadow-sm"
+                                >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    一括削除
+                                </button>
+                            </div>
+                        )}
+
+                        {vaccineHistory.length === 0 ? (
+                            <div className="bg-white rounded-2xl p-12 text-center border border-dashed border-gray-300">
+                                <CheckSquare className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                                <p className="text-gray-500 font-medium">まだワクチンの記録がありません。</p>
+                            </div>
+                        ) : (
+                            vaccineHistory.map((item) => (
+                                <div key={item.id} className="relative flex items-center group w-full overflow-hidden">
+                                    {isEditMode && (
+                                        <button
+                                            onClick={() => toggleSelect(item.id)}
+                                            className="mr-3 p-1 text-indigo-600 flex-shrink-0"
+                                        >
+                                            {selectedIds.includes(item.id) ? (
+                                                <CheckSquare className="h-6 w-6" />
+                                            ) : (
+                                                <Square className="h-6 w-6" />
+                                            )}
+                                        </button>
+                                    )}
+                                    <button
+                                        onClick={() => isEditMode ? toggleSelect(item.id) : setSelectedVaccine(item)}
+                                        className={`flex-grow min-w-0 bg-white p-4 rounded-xl border border-gray-100 shadow-sm transition-all flex items-center space-x-4 text-left ${
+                                            isEditMode
+                                                ? (selectedIds.includes(item.id) ? 'border-indigo-300 bg-indigo-50/30' : 'hover:border-gray-300')
+                                                : 'hover:border-indigo-300 hover:shadow-md'
+                                        }`}
+                                    >
+                                        <div className="h-12 w-12 bg-indigo-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                                            <CheckSquare className="h-6 w-6 text-indigo-600" />
+                                        </div>
+                                        <div className="flex-grow min-w-0">
+                                            <div className="flex items-center text-sm text-gray-500 mb-1">
+                                                <Calendar className="h-3.5 w-3.5 mr-1.5" />
+                                                {format(new Date(item.event_date), 'yyyy/MM/dd')}
+                                            </div>
+                                            <p className="text-gray-900 font-bold truncate">
+                                                {item.title}
+                                            </p>
+                                            <p className="text-gray-500 text-sm truncate">
+                                                {item.clinic_name || '病院名不明'}
+                                            </p>
+                                        </div>
+                                        {!isEditMode && <ChevronRight className="h-5 w-5 text-gray-400" />}
+                                    </button>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                ) : activeTab === 'receipt' ? (
+                    /* 診療明細一覧 */
+                    <div className="space-y-4">
+                        {isEditMode && receiptHistory.length > 0 && (
+                            <div className="flex items-center justify-between bg-indigo-50 p-4 rounded-xl border border-indigo-100 mb-4">
+                                <button
+                                    onClick={toggleSelectAll}
+                                    className="flex items-center text-sm font-medium text-indigo-700"
+                                >
+                                    {selectedIds.length === receiptHistory.length ? (
+                                        <CheckSquare className="h-5 w-5 mr-2" />
+                                    ) : (
+                                        <Square className="h-5 w-5 mr-2" />
+                                    )}
+                                    すべて選択 ({selectedIds.length})
+                                </button>
+                                <button
+                                    onClick={() => setShowDeleteConfirm(true)}
+                                    disabled={selectedIds.length === 0}
+                                    className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors text-sm font-bold shadow-sm"
+                                >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    一括削除
+                                </button>
+                            </div>
+                        )}
+
+                        {receiptHistory.length === 0 ? (
+                            <div className="bg-white rounded-2xl p-12 text-center border border-dashed border-gray-300">
+                                <Scale className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                                <p className="text-gray-500 font-medium">まだ診療明細の記録がありません。</p>
+                            </div>
+                        ) : (
+                            receiptHistory.map((item) => (
+                                <div key={item.id} className="relative flex items-center group w-full overflow-hidden">
+                                    {isEditMode && (
+                                        <button
+                                            onClick={() => toggleSelect(item.id)}
+                                            className="mr-3 p-1 text-indigo-600 flex-shrink-0"
+                                        >
+                                            {selectedIds.includes(item.id) ? (
+                                                <CheckSquare className="h-6 w-6" />
+                                            ) : (
+                                                <Square className="h-6 w-6" />
+                                            )}
+                                        </button>
+                                    )}
+                                    <button
+                                        onClick={() => isEditMode ? toggleSelect(item.id) : setSelectedReceipt(item)}
+                                        className={`flex-grow min-w-0 bg-white p-4 rounded-xl border border-gray-100 shadow-sm transition-all flex items-center space-x-4 text-left ${
+                                            isEditMode
+                                                ? (selectedIds.includes(item.id) ? 'border-indigo-300 bg-indigo-50/30' : 'hover:border-gray-300')
+                                                : 'hover:border-indigo-300 hover:shadow-md'
+                                        }`}
+                                    >
+                                        <div className="h-12 w-12 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                                            <img
+                                                src={`${process.env.NEXT_PUBLIC_BACKEND_URL}/storage/${item.image_path}`}
+                                                alt="サムネイル"
+                                                className="w-full h-full object-cover"
+                                            />
+                                        </div>
+                                        <div className="flex-grow min-w-0">
+                                            <div className="flex items-center text-sm text-gray-500 mb-1">
+                                                <Calendar className="h-3.5 w-3.5 mr-1.5" />
+                                                {format(new Date(item.receipt_date), 'yyyy/MM/dd')}
+                                            </div>
+                                            <p className="text-gray-900 font-bold truncate">
+                                                {item.clinic_name || '病院名不明'}
+                                            </p>
+                                            <p className="text-indigo-600 font-bold text-sm">
+                                                ¥{item.total_amount?.toLocaleString()}
+                                            </p>
+                                        </div>
+                                        {!isEditMode && <ChevronRight className="h-5 w-5 text-gray-400" />}
+                                    </button>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                ) : activeTab === 'checkup' ? (
+                    /* 健康診断一覧 */
+                    <div className="space-y-4">
+                        {isEditMode && checkupHistory.length > 0 && (
+                            <div className="flex items-center justify-between bg-indigo-50 p-4 rounded-xl border border-indigo-100 mb-4">
+                                <button
+                                    onClick={toggleSelectAll}
+                                    className="flex items-center text-sm font-medium text-indigo-700"
+                                >
+                                    {selectedIds.length === checkupHistory.length ? (
+                                        <CheckSquare className="h-5 w-5 mr-2" />
+                                    ) : (
+                                        <Square className="h-5 w-5 mr-2" />
+                                    )}
+                                    すべて選択 ({selectedIds.length})
+                                </button>
+                                <button
+                                    onClick={() => setShowDeleteConfirm(true)}
+                                    disabled={selectedIds.length === 0}
+                                    className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors text-sm font-bold shadow-sm"
+                                >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    一括削除
+                                </button>
+                            </div>
+                        )}
+
+                        {checkupHistory.length === 0 ? (
+                            <div className="bg-white rounded-2xl p-12 text-center border border-dashed border-gray-300">
+                                <Clipboard className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                                <p className="text-gray-500 font-medium">まだ健康診断の記録がありません。</p>
+                            </div>
+                        ) : (
+                            checkupHistory.map((item) => (
+                                <div key={item.id} className="relative flex items-center group w-full overflow-hidden">
+                                    {isEditMode && (
+                                        <button
+                                            onClick={() => toggleSelect(item.id)}
+                                            className="mr-3 p-1 text-indigo-600 flex-shrink-0"
+                                        >
+                                            {selectedIds.includes(item.id) ? (
+                                                <CheckSquare className="h-6 w-6" />
+                                            ) : (
+                                                <Square className="h-6 w-6" />
+                                            )}
+                                        </button>
+                                    )}
+                                    <button
+                                        onClick={() => isEditMode ? toggleSelect(item.id) : setSelectedCheckup(item)}
+                                        className={`flex-grow min-w-0 bg-white p-4 rounded-xl border border-gray-100 shadow-sm transition-all flex items-center space-x-4 text-left ${
+                                            isEditMode
+                                                ? (selectedIds.includes(item.id) ? 'border-indigo-300 bg-indigo-50/30' : 'hover:border-gray-300')
+                                                : 'hover:border-indigo-300 hover:shadow-md'
+                                        }`}
+                                    >
+                                        <div className="h-12 w-12 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                                            <img
+                                                src={`${process.env.NEXT_PUBLIC_BACKEND_URL}/storage/${item.image_path}`}
+                                                alt="サムネイル"
+                                                className="w-full h-full object-cover"
+                                            />
+                                        </div>
+                                        <div className="flex-grow min-w-0">
+                                            <div className="flex items-center text-sm text-gray-500 mb-1">
+                                                <Calendar className="h-3.5 w-3.5 mr-1.5" />
+                                                {format(new Date(item.checkup_date), 'yyyy/MM/dd')}
+                                            </div>
+                                            <p className="text-gray-900 font-bold truncate">
+                                                {item.clinic_name || '病院名不明'}
+                                            </p>
+                                            <p className="text-gray-500 text-sm">
+                                                検査項目: {Array.isArray(item.results) ? item.results.length : (typeof item.results === 'string' ? JSON.parse(item.results).length : 0)}件
+                                            </p>
+                                        </div>
+                                        {!isEditMode && <ChevronRight className="h-5 w-5 text-gray-400" />}
                                     </button>
                                 </div>
                             ))
@@ -322,6 +800,30 @@ export default function PetHistoryPage({ params }: { params: Promise<{ id: strin
                 ) : (
                     /* 健康記録一覧 */
                     <div className="space-y-4">
+                        {isEditMode && healthLogs.length > 0 && (
+                            <div className="flex items-center justify-between bg-indigo-50 p-4 rounded-xl border border-indigo-100 mb-4">
+                                <button
+                                    onClick={toggleSelectAll}
+                                    className="flex items-center text-sm font-medium text-indigo-700"
+                                >
+                                    {selectedIds.length === healthLogs.length ? (
+                                        <CheckSquare className="h-5 w-5 mr-2" />
+                                    ) : (
+                                        <Square className="h-5 w-5 mr-2" />
+                                    )}
+                                    すべて選択 ({selectedIds.length})
+                                </button>
+                                <button
+                                    onClick={() => setShowDeleteConfirm(true)}
+                                    disabled={selectedIds.length === 0}
+                                    className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors text-sm font-bold shadow-sm"
+                                >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    一括削除
+                                </button>
+                            </div>
+                        )}
+
                         {healthLogs.length === 0 ? (
                             <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-gray-300">
                                 <ClipboardList className="h-12 w-12 text-gray-300 mx-auto mb-3" />
@@ -330,54 +832,80 @@ export default function PetHistoryPage({ params }: { params: Promise<{ id: strin
                         ) : (
                             <div className="space-y-4">
                                 {healthLogs.map((log) => (
-                                    <div key={log.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
-                                        <div className="p-4 border-b border-gray-50 flex items-center justify-between bg-gray-50/50">
-                                            <span className="font-bold text-gray-700 flex items-center">
-                                                <Calendar className="h-4 w-4 mr-2 text-indigo-500" />
-                                                {format(parseISO(log.logged_at), 'yyyy年MM月dd日(E)', { locale: ja })}
-                                            </span>
+                                    <div key={log.id} className="relative flex items-center group w-full overflow-hidden">
+                                        {isEditMode && (
                                             <button
-                                                onClick={() => handleHealthEdit(log)}
-                                                className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-all"
+                                                onClick={() => toggleSelect(log.id)}
+                                                className="mr-3 p-1 text-indigo-600 flex-shrink-0"
                                             >
-                                                <Edit2 className="h-4 w-4" />
+                                                {selectedIds.includes(log.id) ? (
+                                                    <CheckSquare className="h-6 w-6" />
+                                                ) : (
+                                                    <Square className="h-6 w-6" />
+                                                )}
                                             </button>
-                                        </div>
-                                        <div className="p-4">
-                                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                                                {log.weight && (
-                                                    <div className="flex items-center text-sm text-gray-600">
-                                                        <Scale className="h-4 w-4 mr-2 text-blue-500" />
-                                                        <span>{log.weight}kg</span>
-                                                    </div>
+                                        )}
+                                        <div 
+                                            onClick={() => isEditMode && toggleSelect(log.id)}
+                                            className={`flex-grow bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden transition-all ${
+                                                isEditMode
+                                                    ? (selectedIds.includes(log.id) ? 'border-indigo-300 bg-indigo-50/30' : 'hover:border-gray-300')
+                                                    : 'hover:shadow-md'
+                                            }`}
+                                        >
+                                            <div className="p-4 border-b border-gray-50 flex items-center justify-between bg-gray-50/50">
+                                                <span className="font-bold text-gray-700 flex items-center">
+                                                    <Calendar className="h-4 w-4 mr-2 text-indigo-500" />
+                                                    {format(parseISO(log.logged_at), 'yyyy年MM月dd日(E)', { locale: ja })}
+                                                </span>
+                                                {!isEditMode && (
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleHealthEdit(log);
+                                                        }}
+                                                        className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-all"
+                                                    >
+                                                        <Edit2 className="h-4 w-4" />
+                                                    </button>
                                                 )}
-                                                {log.meal_amount && (
-                                                    <div className="flex items-center text-sm text-gray-600">
-                                                        <Utensils className="h-4 w-4 mr-2 text-orange-500" />
-                                                        <span>{log.meal_amount}</span>
-                                                    </div>
-                                                )}
-                                                {log.exercise_duration > 0 && (
-                                                    <div className="flex items-center text-sm text-gray-600">
-                                                        <Activity className="h-4 w-4 mr-2 text-green-500" />
-                                                        <span>{log.exercise_duration}分</span>
-                                                    </div>
-                                                )}
-                                                <div className="flex items-center text-sm text-gray-600">
-                                                    <TrashIcon className="h-4 w-4 mr-2 text-amber-600" />
-                                                    <span>便: {log.stool_status}</span>
-                                                </div>
-                                                <div className="flex items-center text-sm text-gray-600">
-                                                    <Droplets className="h-4 w-4 mr-2 text-blue-400" />
-                                                    <span>尿: {log.urine_status}</span>
-                                                </div>
                                             </div>
-                                            {log.memo && (
-                                                <div className="mt-4 p-3 bg-gray-50 rounded-xl text-sm text-gray-600 flex items-start border border-gray-100">
-                                                    <Clipboard className="h-4 w-4 mr-2 mt-0.5 text-gray-400 flex-shrink-0" />
-                                                    <p className="whitespace-pre-wrap">{log.memo}</p>
+                                            <div className="p-4">
+                                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                                                    {log.weight && (
+                                                        <div className="flex items-center text-sm text-gray-600">
+                                                            <Scale className="h-4 w-4 mr-2 text-blue-500" />
+                                                            <span>{log.weight}kg</span>
+                                                        </div>
+                                                    )}
+                                                    {log.meal_amount && (
+                                                        <div className="flex items-center text-sm text-gray-600">
+                                                            <Utensils className="h-4 w-4 mr-2 text-orange-500" />
+                                                            <span>{log.meal_amount}</span>
+                                                        </div>
+                                                    )}
+                                                    {log.exercise_duration > 0 && (
+                                                        <div className="flex items-center text-sm text-gray-600">
+                                                            <Activity className="h-4 w-4 mr-2 text-green-500" />
+                                                            <span>{log.exercise_duration}分</span>
+                                                        </div>
+                                                    )}
+                                                    <div className="flex items-center text-sm text-gray-600">
+                                                        <TrashIcon className="h-4 w-4 mr-2 text-amber-600" />
+                                                        <span>便: {log.stool_status}</span>
+                                                    </div>
+                                                    <div className="flex items-center text-sm text-gray-600">
+                                                        <Droplets className="h-4 w-4 mr-2 text-blue-400" />
+                                                        <span>尿: {log.urine_status}</span>
+                                                    </div>
                                                 </div>
-                                            )}
+                                                {log.memo && (
+                                                    <div className="mt-4 p-3 bg-gray-50 rounded-xl text-sm text-gray-600 flex items-start border border-gray-100">
+                                                        <Clipboard className="h-4 w-4 mr-2 mt-0.5 text-gray-400 flex-shrink-0" />
+                                                        <p className="whitespace-pre-wrap">{log.memo}</p>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 ))}
@@ -387,8 +915,8 @@ export default function PetHistoryPage({ params }: { params: Promise<{ id: strin
                 )}
             </main>
 
-            {/* AI削除確認モーダル */}
-            {showAiDeleteConfirm && (
+            {/* 削除確認モーダル */}
+            {showDeleteConfirm && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
                     <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
                         <div className="p-6 text-center">
@@ -397,22 +925,24 @@ export default function PetHistoryPage({ params }: { params: Promise<{ id: strin
                             </div>
                             <h3 className="text-xl font-bold text-gray-900 mb-2">削除の確認</h3>
                             <p className="text-gray-600 mb-6">
-                                選択した {selectedAiIds.length} 件の履歴を削除しますか？<br />
+                                選択した {selectedIds.length} 件の履歴を削除しますか？<br />
                                 この操作は取り消せません。
                             </p>
                             <div className="grid grid-cols-2 gap-3">
                                 <button
                                     onClick={() => {
-                                        setShowAiDeleteConfirm(false);
+                                        setShowDeleteConfirm(false);
                                         // 1件削除（詳細画面から）の場合は選択をクリア
-                                        if (selectedDiagnosis) setSelectedAiIds([]);
+                                        if (selectedDiagnosis || selectedReceipt || selectedCheckup || selectedVaccine) {
+                                            setSelectedIds([]);
+                                        }
                                     }}
                                     className="px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition-colors"
                                 >
                                     キャンセル
                                 </button>
                                 <button
-                                    onClick={handleAiDelete}
+                                    onClick={handleBulkDelete}
                                     disabled={isDeleting}
                                     className="px-4 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center"
                                 >

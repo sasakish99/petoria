@@ -45,9 +45,10 @@ class VaccinationCertificateController extends Controller
                 'messages' => [
                     [
                         'role' => 'system',
-                        'content' => "あなたは動物病院の証明書を解析するエキスパートです。画像から「接種日（実施日）」、「ワクチンの種類」、「動物病院名」を抽出してください。
+                        'content' => "あなたは動物病院の証明書を解析するエキスパートです。画像から「接種日（実施日）」、「ワクチンの種類」、「動物病院名」、「ペットの名前」を抽出してください。
 ワクチンの種類は、混合ワクチンの場合は 'mixed'、狂犬病ワクチンの場合は 'rabies' と判定してください。
-JSON形式で {'vaccination_date': 'YYYY-MM-DD', 'vaccine_type': 'mixed'|'rabies', 'clinic_name': '病院名'} のように返してください。
+ペットの名前（pet_name）に「ちゃん」や「くん」などの敬称が含まれる場合は除外して名前のみを抽出してください。
+JSON形式で {'vaccination_date': 'YYYY-MM-DD', 'vaccine_type': 'mixed'|'rabies', 'clinic_name': '病院名', 'pet_name': 'ペットの名前'} のように返してください。
 見つからない項目は null にしてください。余計な説明は不要です。",
                     ],
                     [
@@ -77,6 +78,11 @@ JSON形式で {'vaccination_date': 'YYYY-MM-DD', 'vaccine_type': 'mixed'|'rabies
             $eventDate = $aiResult['vaccination_date'] ?? null;
             $vaccineType = $aiResult['vaccine_type'] ?? 'mixed';
             $clinicName = $aiResult['clinic_name'] ?? null;
+            $petName = $aiResult['pet_name'] ?? null;
+
+            if ($petName) {
+                $petName = preg_replace('/(ちゃん|くん)$/u', '', $petName);
+            }
 
             return response()->json([
                 'message' => '解析が完了しました。内容を確認してください。',
@@ -84,6 +90,7 @@ JSON形式で {'vaccination_date': 'YYYY-MM-DD', 'vaccine_type': 'mixed'|'rabies
                     'vaccine_type' => $vaccineType,
                     'event_date' => $eventDate,
                     'clinic_name' => $clinicName,
+                    'pet_name' => $petName,
                     'certificate_path' => $path,
                 ],
             ]);

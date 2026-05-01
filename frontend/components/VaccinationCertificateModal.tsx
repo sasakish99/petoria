@@ -24,8 +24,10 @@ const VaccinationCertificateModal = ({ isOpen, onClose, pet, onSuccess }: Vaccin
         vaccine_type: 'mixed' | 'rabies';
         event_date: string | null;
         clinic_name: string | null;
+        pet_name: string | null;
         certificate_path: string;
     } | null>(null);
+    const [showConfirmName, setShowConfirmName] = useState(false);
     const [successData, setSuccessData] = useState<any>(null);
     const [editedDate, setEditedDate] = useState<string>('');
     const [editedType, setEditedType] = useState<'mixed' | 'rabies'>('mixed');
@@ -107,11 +109,24 @@ const VaccinationCertificateModal = ({ isOpen, onClose, pet, onSuccess }: Vaccin
         }
     };
 
-    const handleSave = async () => {
+    const handleSave = async (bypassNameCheck = false) => {
         if (!analysisResult) return;
+
+        // 名前チェック
+        if (!bypassNameCheck && analysisResult.pet_name && pet.name) {
+            // かなり柔軟な一致チェック（部分一致や空白削除）
+            const normalizedPetName = pet.name.trim().toLowerCase();
+            const normalizedResultName = analysisResult.pet_name.trim().toLowerCase();
+            
+            if (!normalizedResultName.includes(normalizedPetName) && !normalizedPetName.includes(normalizedResultName)) {
+                setShowConfirmName(true);
+                return;
+            }
+        }
 
         setIsSaving(true);
         setError(null);
+        setShowConfirmName(false);
 
         try {
             const response = await axios.post(`/api/pets/${pet.id}/vaccination-certificates`, {
@@ -136,6 +151,7 @@ const VaccinationCertificateModal = ({ isOpen, onClose, pet, onSuccess }: Vaccin
         setPreviewUrl(null);
         setError(null);
         setAnalysisResult(null);
+        setShowConfirmName(false);
         setSuccessData(null);
         onClose();
     };
@@ -215,6 +231,37 @@ const VaccinationCertificateModal = ({ isOpen, onClose, pet, onSuccess }: Vaccin
                             </div>
 
                             <div className="bg-slate-50 rounded-[2rem] p-6 space-y-5 border border-slate-100">
+                                {showConfirmName && (
+                                    <div className="p-4 rounded-2xl bg-amber-50 border border-amber-100 space-y-3 animate-in fade-in zoom-in duration-300">
+                                        <div className="flex items-start gap-3">
+                                            <AlertCircle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                                            <div>
+                                                <p className="text-sm text-amber-800 font-bold">
+                                                    別の子の証明書の可能性があります
+                                                </p>
+                                                <p className="text-xs text-amber-700 mt-1">
+                                                    解析された名前: <span className="font-bold">{analysisResult.pet_name}</span><br />
+                                                    現在のうちの子: <span className="font-bold">{pet.name}</span>
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => setShowConfirmName(false)}
+                                                className="flex-1 py-2 bg-white text-slate-600 rounded-xl text-xs font-bold border border-amber-200 hover:bg-amber-100 transition-colors"
+                                            >
+                                                修正する
+                                            </button>
+                                            <button
+                                                onClick={() => handleSave(true)}
+                                                className="flex-1 py-2 bg-amber-500 text-white rounded-xl text-xs font-bold hover:bg-amber-600 transition-colors shadow-sm"
+                                            >
+                                                このまま登録
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
                                 <div className="space-y-2">
                                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">ワクチンの種類</label>
                                     <div className="grid grid-cols-2 gap-3">
@@ -282,9 +329,13 @@ const VaccinationCertificateModal = ({ isOpen, onClose, pet, onSuccess }: Vaccin
                                     やり直す
                                 </button>
                                 <button
-                                    onClick={handleSave}
-                                    disabled={isSaving}
-                                    className="flex-[2] py-4 bg-slate-800 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-slate-700 hover:-translate-y-1 hover:shadow-xl active:bg-slate-900 transition-all flex items-center justify-center gap-2"
+                                    onClick={() => handleSave(false)}
+                                    disabled={isSaving || showConfirmName}
+                                    className={`flex-[2] py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
+                                        isSaving || showConfirmName
+                                            ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                                            : 'bg-slate-800 text-white hover:bg-slate-700 hover:-translate-y-1 hover:shadow-xl active:bg-slate-900'
+                                    }`}
                                 >
                                     {isSaving ? (
                                         <Loader2 className="h-5 w-5 animate-spin" />

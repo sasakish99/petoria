@@ -6,14 +6,19 @@
 
 ## 機能概要
 - **ユーザー認証**: Laravel Breeze (API) による会員登録、ログイン機能。
-- **ダッシュボード**: うちの子ごとの体重推移グラフ、散歩時間統計（合計・平均）、ワクチン接種リマインダーを表示。
+- **ダッシュボード**: うちの子ごとの体重推移グラフ、散歩時間統計、ワクチン接種リマインダーを表示。最新の診療明細や健康診断結果も確認可能。
 - **うちの子管理**: 複数のうちの子のプロフィールを登録・管理。
-- **健康記録**: 体重の記録管理（グラフ化対応）。
+- **健康記録**: 体重、食事量、排泄状態、散歩時間などの日々の記録管理。
 - **医療イベント管理**: ワクチンや予防薬の予定管理。
-- **AI健康診断 (実装予定)**: 気になる箇所の写真を撮影し、AI（OpenAI GPT-4o）によるアドバイスを受信。
+- **AI健康診断**: 気になる箇所の写真を撮影し、AI（OpenAI GPT-4o）によるアドバイスを受信。
+- **AI解析機能**: 
+  - **診療明細解析**: 写真から病院名、日付、金額、明細項目を自動抽出。
+  - **健康診断解析**: 検査結果表から数値や基準値を自動抽出。
+  - **ワクチン証明書解析**: 証明書から接種日や病院名を自動抽出。
+- **履歴管理**: 全ての記録（健康記録、AI診断、診療明細、健康診断、ワクチン）を一覧表示。複数選択による一括削除にも対応。
 
 ## 技術スタック
-- **フロントエンド**: Next.js 15 (TypeScript), Tailwind CSS, Recharts, SWR
+- **フロントエンド**: Next.js 15 (TypeScript), Tailwind CSS, Recharts, SWR, Lucide React
 - **バックエンド**: Laravel 11 (PHP 8.4)
 - **データベース**: MySQL 8.0
 - **AI**: OpenAI API (GPT-4o)
@@ -23,20 +28,23 @@
 
 ### 前提条件
 - Docker / Docker Compose
+- OpenAI API キー (解析機能の利用に必要)
 
 ### 手順
 1. リポジトリをクローン
-2. コンテナのビルドと起動
+2. 環境変数の設定
+   `backend/.env` に `OPENAI_API_KEY` を設定してください。
+3. コンテナのビルドと起動
    ```bash
    docker compose up -d --build
    ```
-3. バックエンドの初期設定
+4. バックエンドの初期設定
    ```bash
    docker compose exec backend composer install
    docker compose exec backend php artisan key:generate
    docker compose exec backend php artisan migrate
    ```
-4. フロントエンドの初期設定
+5. フロントエンドの初期設定
    ```bash
    docker compose exec frontend npm install
    ```
@@ -44,15 +52,6 @@
 ### アクセス
 - **Frontend**: [http://localhost:3000](http://localhost:3000)
 - **Backend (API)**: [http://localhost:8000](http://localhost:8000)
-
-## 認証について (GitHubへのPush)
-GitHubでは2021年8月より、パスワードによる認証が廃止されました。
-`git push` 等でパスワードを求められた際は、GitHubの **Personal Access Token (PAT)** を作成し、パスワードの代わりに入力してください。
-
-### トークンの作成手順
-1. GitHubの [Settings] > [Developer settings] > [Personal access tokens] > [Tokens (classic)] を開く。
-2. [Generate new token] をクリック。
-3. `repo` スコープにチェックを入れてトークンを生成し、必ず控えておく。
 
 ## 設計書
 詳細な設計については [design_document.md](./design_document.md) を参照してください。

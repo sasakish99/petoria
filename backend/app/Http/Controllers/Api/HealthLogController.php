@@ -72,4 +72,20 @@ class HealthLogController extends Controller
 
         return response()->json(null, 204);
     }
+
+    public function bulkDestroy(Request $request, Pet $pet)
+    {
+        if ($pet->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:health_logs,id',
+        ]);
+
+        $pet->healthLogs()->whereIn('id', $request->ids)->delete();
+
+        return response()->json(null, 204);
+    }
 }

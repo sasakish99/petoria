@@ -34,7 +34,11 @@ class DashboardController extends Controller
                 })->orWhereNotNull('vaccine_type')
                   ->orderBy('event_date', 'asc');
             }, 'aiDiagnoses' => function($query) {
-                $query->where('status', 'completed')->orderBy('created_at', 'desc')->take(1);
+                $query->where('status', 'completed')->orderBy('created_at', 'desc');
+            }, 'medicalReceipts' => function($query) {
+                $query->orderBy('receipt_date', 'desc');
+            }, 'healthCheckupResults' => function($query) {
+                $query->orderBy('checkup_date', 'desc');
             }])
             ->get();
 
