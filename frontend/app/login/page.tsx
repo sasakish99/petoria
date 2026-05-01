@@ -31,7 +31,7 @@ const Login = () => {
                     <img 
                         src="/logo.png" 
                         alt="Petoria Logo" 
-                        className="h-48 w-auto mb-6 drop-shadow-md" 
+                        className="h-40 w-auto mb-6 drop-shadow-md"
                     />
                     <h1 className="text-3xl font-black bg-gradient-to-r from-slate-800 to-slate-500 bg-clip-text text-transparent tracking-tight mb-2">
                         Petoria
