@@ -102,7 +102,7 @@ const MedicalReceiptHistory = () => {
                                                     </div>
                                                     <div className="flex items-center text-sm font-black text-indigo-600">
                                                         <JapaneseYen className="h-3.5 w-3.5 mr-1" />
-                                                        {Number(receipt.total_amount).toLocaleString()}
+                                                        {Math.floor(Number(receipt.total_amount) || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                                     </div>
                                                 </div>
                                             </div>

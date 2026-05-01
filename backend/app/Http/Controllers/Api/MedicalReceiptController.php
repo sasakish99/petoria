@@ -40,9 +40,29 @@ class MedicalReceiptController extends Controller
             return response()->json(['message' => 'AI解析に失敗しました。'], 500);
         }
 
+        // 金額が0の場合の補正ロジック
+        if (isset($analysisResult['items']) && is_array($analysisResult['items'])) {
+            foreach ($analysisResult['items'] as &$item) {
+                $total = $item['total'] ?? 0;
+                $price = $item['price'] ?? 0;
+                $quantity = $item['quantity'] ?? 1;
+
+                // totalが0でpriceが0でない場合、再計算を試みる
+                if ($total == 0 && $price != 0) {
+                    $item['total'] = $price * $quantity;
+                }
+            }
+            unset($item);
+        }
+
         $petName = $analysisResult['pet_name'] ?? null;
         if ($petName) {
-            $petName = preg_replace('/(ちゃん|くん)$/u', '', $petName);
+            $petName = preg_replace('/(ちゃん|くん|様|殿)$/u', '', $petName);
+        }
+
+        $totalAmount = $analysisResult['total_amount'] ?? null;
+        if ($totalAmount !== null) {
+            $totalAmount = (int) floor((float)$totalAmount);
         }
 
         $receipt = MedicalReceipt::create([
@@ -50,7 +70,7 @@ class MedicalReceiptController extends Controller
             'image_path' => $path,
             'clinic_name' => $analysisResult['clinic_name'] ?? null,
             'receipt_date' => $analysisResult['receipt_date'] ?? null,
-            'total_amount' => $analysisResult['total_amount'] ?? null,
+            'total_amount' => $totalAmount,
             'items' => $analysisResult['items'] ?? [],
             'raw_text' => $analysisResult['raw_text'] ?? null,
             'pet_name' => $petName,
@@ -88,6 +108,24 @@ class MedicalReceiptController extends Controller
             'total_amount' => 'nullable|numeric',
             'items' => 'nullable|array',
         ]);
+
+        if (isset($validated['total_amount'])) {
+            $validated['total_amount'] = (int) floor((float)$validated['total_amount']);
+        }
+
+        if (isset($validated['items']) && is_array($validated['items'])) {
+            foreach ($validated['items'] as &$item) {
+                if (isset($item['price'])) {
+                    $item['price'] = (int) floor((float)$item['price']);
+                }
+                if (isset($item['total'])) {
+                    $item['total'] = (int) floor((float)$item['total']);
+                }
+                if (isset($item['amount'])) {
+                    $item['amount'] = (int) floor((float)$item['amount']);
+                }
+            }
+        }
 
         $medicalReceipt->update($validated);
 

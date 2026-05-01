@@ -27,6 +27,8 @@ class DashboardController extends Controller
         $pets = $user->pets()
             ->with(['breed', 'healthLogs' => function($query) {
                 $query->orderBy('logged_at', 'desc')->take(30);
+            }, 'exerciseLogs' => function($query) {
+                $query->orderBy('logged_at', 'desc')->take(30);
             }, 'medicalEvents' => function($query) {
                 $query->where(function($q) {
                     $q->where('is_completed', false)

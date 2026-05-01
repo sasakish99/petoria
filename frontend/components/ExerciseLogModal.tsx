@@ -1,30 +1,21 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Save, Activity, Trash2, Clipboard, Scale, Calendar, Loader2, Smile, Frown, Meh, Laugh, Angry } from 'lucide-react';
+import { X, Save, Activity, Trash2, Clipboard, Calendar, Loader2 } from 'lucide-react';
 import axios from '@/lib/axios';
 import { format, parseISO } from 'date-fns';
 
-const conditions = [
-    { value: 1, label: '最悪', icon: Angry, color: 'text-rose-500', bg: 'bg-rose-50', active: 'bg-rose-500 text-white' },
-    { value: 2, label: '悪い', icon: Frown, color: 'text-orange-500', bg: 'bg-orange-50', active: 'bg-orange-500 text-white' },
-    { value: 3, label: '普通', icon: Meh, color: 'text-amber-500', bg: 'bg-amber-50', active: 'bg-amber-500 text-white' },
-    { value: 4, label: '良い', icon: Smile, color: 'text-emerald-500', bg: 'bg-emerald-50', active: 'bg-emerald-500 text-white' },
-    { value: 5, label: '最高', icon: Laugh, color: 'text-sky-500', bg: 'bg-sky-50', active: 'bg-sky-500 text-white' },
-];
-
-interface HealthLogModalProps {
+interface ExerciseLogModalProps {
     pet: any;
     editingLog?: any;
     onClose: () => void;
     onSuccess: () => void;
 }
 
-const HealthLogModal = ({ pet, editingLog, onClose, onSuccess }: HealthLogModalProps) => {
+const ExerciseLogModal = ({ pet, editingLog, onClose, onSuccess }: ExerciseLogModalProps) => {
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
-        condition: 3,
-        weight: '',
+        duration_minutes: '',
         memo: '',
         logged_at: format(new Date(), 'yyyy-MM-dd'),
     });
@@ -32,15 +23,13 @@ const HealthLogModal = ({ pet, editingLog, onClose, onSuccess }: HealthLogModalP
     useEffect(() => {
         if (editingLog) {
             setFormData({
-                condition: editingLog.condition || 3,
-                weight: editingLog.weight?.toString() || '',
+                duration_minutes: editingLog.duration_minutes?.toString() || '',
                 memo: editingLog.memo || '',
                 logged_at: editingLog.logged_at ? format(parseISO(editingLog.logged_at), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
             });
         } else {
             setFormData({
-                condition: 3,
-                weight: '',
+                duration_minutes: '',
                 memo: '',
                 logged_at: format(new Date(), 'yyyy-MM-dd'),
             });
@@ -52,16 +41,15 @@ const HealthLogModal = ({ pet, editingLog, onClose, onSuccess }: HealthLogModalP
         setLoading(true);
 
         try {
+            const data = {
+                ...formData,
+                duration_minutes: parseInt(formData.duration_minutes) || 0,
+            };
+
             if (editingLog) {
-                await axios.put(`/api/pets/${pet.id}/health-logs/${editingLog.id}`, {
-                    ...formData,
-                    weight: formData.weight ? parseFloat(formData.weight) : null,
-                });
+                await axios.put(`/api/pets/${pet.id}/exercise-logs/${editingLog.id}`, data);
             } else {
-                await axios.post(`/api/pets/${pet.id}/health-logs`, {
-                    ...formData,
-                    weight: formData.weight ? parseFloat(formData.weight) : null,
-                });
+                await axios.post(`/api/pets/${pet.id}/exercise-logs`, data);
             }
             onSuccess();
             onClose();
@@ -74,11 +62,11 @@ const HealthLogModal = ({ pet, editingLog, onClose, onSuccess }: HealthLogModalP
     };
 
     const handleDelete = async () => {
-        if (!confirm('この記録を削除してもよろしいですか？')) return;
+        if (!confirm('この運動記録を削除してもよろしいですか？')) return;
         setLoading(true);
 
         try {
-            await axios.delete(`/api/pets/${pet.id}/health-logs/${editingLog.id}`);
+            await axios.delete(`/api/pets/${pet.id}/exercise-logs/${editingLog.id}`);
             onSuccess();
             onClose();
         } catch (err) {
@@ -94,7 +82,7 @@ const HealthLogModal = ({ pet, editingLog, onClose, onSuccess }: HealthLogModalP
             <div className="bg-white/90 backdrop-blur-xl rounded-[2.5rem] w-full max-w-lg overflow-hidden shadow-2xl shadow-slate-900/20 border border-white animate-in zoom-in-95 duration-300">
                 <div className="flex items-center justify-between p-8 border-b border-slate-100/50 bg-white/50">
                     <h3 className="text-xl font-black bg-gradient-to-r from-slate-800 to-slate-500 bg-clip-text text-transparent tracking-tight">
-                        {pet.name} の記録を{editingLog ? '編集' : '追加'}
+                        {pet.name} の運動記録を{editingLog ? '編集' : '追加'}
                     </h3>
                     <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-xl transition-all text-slate-400 hover:text-slate-600">
                         <X className="h-6 w-6" />
@@ -117,46 +105,20 @@ const HealthLogModal = ({ pet, editingLog, onClose, onSuccess }: HealthLogModalP
                             />
                         </div>
 
-                        <div className="grid grid-cols-1">
-                            <div>
-                                <label className="block text-sm font-bold text-slate-700 mb-2 ml-1 flex items-center">
-                                    <Scale className="h-4 w-4 mr-2 text-blue-400" />
-                                    体重 (kg)
-                                </label>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    placeholder="5.5"
-                                    value={formData.weight}
-                                    onChange={e => setFormData({ ...formData, weight: e.target.value })}
-                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:border-slate-400 focus:ring focus:ring-slate-200/50 outline-none transition-all font-bold text-slate-700"
-                                />
-                            </div>
-                        </div>
-
                         <div>
-                            <label className="block text-sm font-bold text-slate-700 mb-4 ml-1">今日の状態</label>
-                            <div className="grid grid-cols-5 gap-2">
-                                {conditions.map((item) => {
-                                    const Icon = item.icon;
-                                    const isActive = formData.condition === item.value;
-                                    return (
-                                        <button
-                                            key={item.value}
-                                            type="button"
-                                            onClick={() => setFormData({ ...formData, condition: item.value })}
-                                            className={`flex flex-col items-center justify-center p-3 rounded-2xl transition-all border ${
-                                                isActive 
-                                                    ? `${item.active} border-transparent shadow-lg scale-105` 
-                                                    : `bg-slate-50 border-slate-100 text-slate-400 hover:bg-slate-100`
-                                            }`}
-                                        >
-                                            <Icon className={`h-6 w-6 mb-1 ${isActive ? 'text-white' : item.color}`} />
-                                            <span className="text-[10px] font-bold">{item.label}</span>
-                                        </button>
-                                    );
-                                })}
-                            </div>
+                            <label className="block text-sm font-bold text-slate-700 mb-2 ml-1 flex items-center">
+                                <Activity className="h-4 w-4 mr-2 text-emerald-400" />
+                                運動時間 (分)
+                            </label>
+                            <input
+                                type="number"
+                                required
+                                min="0"
+                                placeholder="30"
+                                value={formData.duration_minutes}
+                                onChange={e => setFormData({ ...formData, duration_minutes: e.target.value })}
+                                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:border-slate-400 focus:ring focus:ring-slate-200/50 outline-none transition-all font-bold text-slate-700"
+                            />
                         </div>
 
                         <div>
@@ -166,7 +128,7 @@ const HealthLogModal = ({ pet, editingLog, onClose, onSuccess }: HealthLogModalP
                             </label>
                             <textarea
                                 rows={3}
-                                placeholder="気になることがあれば入力してください"
+                                placeholder="散歩の様子など"
                                 value={formData.memo}
                                 onChange={e => setFormData({ ...formData, memo: e.target.value })}
                                 className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:border-slate-400 focus:ring focus:ring-slate-200/50 outline-none transition-all font-medium text-slate-700 min-h-[100px] resize-none"
@@ -214,4 +176,4 @@ const HealthLogModal = ({ pet, editingLog, onClose, onSuccess }: HealthLogModalP
     );
 };
 
-export default HealthLogModal;
+export default ExerciseLogModal;

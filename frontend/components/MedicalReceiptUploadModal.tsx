@@ -150,23 +150,14 @@ const MedicalReceiptUploadModal = ({ isOpen, onClose, pet, onSuccess }: MedicalR
                 <div className="flex-1 overflow-y-auto p-6">
                     {!result ? (
                         <div className="space-y-6">
-                            {previewUrl ? (
-                                <div className="relative group rounded-3xl overflow-hidden aspect-[4/3] bg-slate-100 border-4 border-white shadow-lg">
-                                    <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
-                                    <button 
-                                        onClick={() => {
-                                            setSelectedImage(null);
-                                            setPreviewUrl(null);
-                                        }}
-                                        className="absolute top-4 right-4 p-2 bg-slate-900/50 hover:bg-slate-900/70 text-white rounded-full backdrop-blur-md transition-all opacity-0 group-hover:opacity-100"
-                                    >
-                                        <X className="h-5 w-5" />
-                                    </button>
-                                </div>
-                            ) : (
                                 <div 
-                                    className={`relative aspect-[4/3] rounded-3xl border-4 border-dashed transition-all flex flex-col items-center justify-center cursor-pointer
-                                        ${isDragging ? 'border-indigo-400 bg-indigo-50/50' : 'border-slate-200 bg-slate-50 hover:bg-white hover:border-slate-300'}`}
+                                    className={`relative group cursor-pointer border-2 border-dashed rounded-[2rem] transition-all duration-300 min-h-[200px] flex flex-col items-center justify-center p-6 ${
+                                        isDragging
+                                            ? 'border-indigo-500 bg-indigo-50 shadow-inner scale-[0.98]'
+                                            : previewUrl 
+                                                ? 'border-indigo-200 bg-indigo-50/30' 
+                                                : 'border-slate-200 hover:border-indigo-400 hover:bg-slate-50'
+                                    }`}
                                     onDragOver={handleDragOver}
                                     onDragLeave={handleDragLeave}
                                     onDrop={handleDrop}
@@ -179,13 +170,35 @@ const MedicalReceiptUploadModal = ({ isOpen, onClose, pet, onSuccess }: MedicalR
                                         accept="image/*" 
                                         className="hidden" 
                                     />
-                                    <div className="h-16 w-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mb-4 text-slate-300 group-hover:text-indigo-400 transition-colors">
-                                        <Camera className="h-8 w-8" />
-                                    </div>
-                                    <p className="text-sm font-black text-slate-600">写真をアップロード</p>
-                                    <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">or drag and drop</p>
+                                    {previewUrl ? (
+                                        <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden shadow-lg">
+                                            <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
+                                            <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                                <Camera className="h-10 w-10 text-white drop-shadow-md" />
+                                            </div>
+                                            <button 
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setSelectedImage(null);
+                                                    setPreviewUrl(null);
+                                                }}
+                                                className="absolute top-4 right-4 p-2 bg-slate-900/50 hover:bg-slate-900/70 text-white rounded-full backdrop-blur-md transition-all z-10"
+                                            >
+                                                <X className="h-5 w-5" />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                <Upload className="h-8 w-8 text-indigo-500" />
+                                            </div>
+                                            <p className="text-slate-600 font-bold mb-1">明細書をアップロード</p>
+                                            <p className="text-slate-400 text-xs text-center px-4">
+                                                写真を撮るか、ライブラリから選択してください。<br />AIが自動で項目と金額を読み取ります。
+                                            </p>
+                                        </>
+                                    )}
                                 </div>
-                            )}
 
                             {error && (
                                 <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl flex items-start gap-3">
@@ -314,7 +327,7 @@ const MedicalReceiptUploadModal = ({ isOpen, onClose, pet, onSuccess }: MedicalR
                                             result.items.map((item: any, idx: number) => (
                                                 <div key={idx} className="flex justify-between items-center text-xs font-bold text-slate-600 pb-2 border-b border-slate-200 last:border-0 last:pb-0">
                                                     <span>{item.name}</span>
-                                                    <span className="font-mono">¥{item.amount.toLocaleString()}</span>
+                                                    <span className="font-mono">¥{Math.floor(item.amount ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
                                                 </div>
                                             ))
                                         ) : (

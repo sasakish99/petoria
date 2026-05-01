@@ -41,7 +41,7 @@ class HealthCheckupResultController extends Controller
 
         $petName = $analysisResult['pet_name'] ?? null;
         if ($petName) {
-            $petName = preg_replace('/(ちゃん|くん)$/u', '', $petName);
+            $petName = preg_replace('/(ちゃん|くん|様|殿)$/u', '', $petName);
         }
 
         $result = HealthCheckupResult::create([

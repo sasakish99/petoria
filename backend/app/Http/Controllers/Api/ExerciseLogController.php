@@ -5,9 +5,9 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Pet;
-use App\Models\HealthLog;
+use App\Models\ExerciseLog;
 
-class HealthLogController extends Controller
+class ExerciseLogController extends Controller
 {
     public function index(Pet $pet)
     {
@@ -15,7 +15,7 @@ class HealthLogController extends Controller
             abort(403);
         }
 
-        $logs = $pet->healthLogs()->orderBy('logged_at', 'desc')->get();
+        $logs = $pet->exerciseLogs()->orderBy('logged_at', 'desc')->get();
 
         return response()->json($logs);
     }
@@ -27,42 +27,40 @@ class HealthLogController extends Controller
         }
 
         $validated = $request->validate([
-            'condition' => 'required|integer|min:1|max:5',
-            'weight' => 'nullable|numeric|min:0',
+            'duration_minutes' => 'required|integer|min:0',
             'memo' => 'nullable|string',
-            'logged_at' => 'required|date_format:Y-m-d',
+            'logged_at' => 'required|date',
         ]);
 
-        $log = $pet->healthLogs()->create($validated);
+        $log = $pet->exerciseLogs()->create($validated);
 
         return response()->json($log, 201);
     }
 
-    public function update(Request $request, Pet $pet, HealthLog $healthLog)
+    public function update(Request $request, Pet $pet, ExerciseLog $exerciseLog)
     {
-        if ($pet->user_id !== auth()->id() || $healthLog->pet_id !== $pet->id) {
+        if ($pet->user_id !== auth()->id() || $exerciseLog->pet_id !== $pet->id) {
             abort(403);
         }
 
         $validated = $request->validate([
-            'condition' => 'required|integer|min:1|max:5',
-            'weight' => 'nullable|numeric|min:0',
+            'duration_minutes' => 'required|integer|min:0',
             'memo' => 'nullable|string',
-            'logged_at' => 'required|date_format:Y-m-d',
+            'logged_at' => 'required|date',
         ]);
 
-        $healthLog->update($validated);
+        $exerciseLog->update($validated);
 
-        return response()->json($healthLog);
+        return response()->json($exerciseLog);
     }
 
-    public function destroy(Pet $pet, HealthLog $healthLog)
+    public function destroy(Pet $pet, ExerciseLog $exerciseLog)
     {
-        if ($pet->user_id !== auth()->id() || $healthLog->pet_id !== $pet->id) {
+        if ($pet->user_id !== auth()->id() || $exerciseLog->pet_id !== $pet->id) {
             abort(403);
         }
 
-        $healthLog->delete();
+        $exerciseLog->delete();
 
         return response()->json(null, 204);
     }
@@ -75,10 +73,10 @@ class HealthLogController extends Controller
 
         $request->validate([
             'ids' => 'required|array',
-            'ids.*' => 'exists:health_logs,id',
+            'ids.*' => 'exists:exercise_logs,id',
         ]);
 
-        $pet->healthLogs()->whereIn('id', $request->ids)->delete();
+        $pet->exerciseLogs()->whereIn('id', $request->ids)->delete();
 
         return response()->json(null, 204);
     }

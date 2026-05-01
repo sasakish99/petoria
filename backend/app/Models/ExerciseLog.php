@@ -4,12 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class HealthLog extends Model
+class ExerciseLog extends Model
 {
     protected $fillable = [
         'pet_id',
-        'condition',
-        'weight',
+        'duration_minutes',
         'memo',
         'logged_at',
     ];

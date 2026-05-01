@@ -22,21 +22,36 @@ import {
     Droplets,
     Plus,
     Clipboard,
-    History
+    History,
+    Smile,
+    Frown,
+    Meh,
+    Laugh,
+    Angry
 } from 'lucide-react';
+
+const conditionIcons: Record<number, any> = {
+    1: { icon: Angry, color: 'text-rose-500', bg: 'bg-rose-50', label: '最悪' },
+    2: { icon: Frown, color: 'text-orange-500', bg: 'bg-orange-50', label: '悪い' },
+    3: { icon: Meh, color: 'text-amber-500', bg: 'bg-amber-50', label: '普通' },
+    4: { icon: Smile, color: 'text-emerald-500', bg: 'bg-emerald-50', label: '良い' },
+    5: { icon: Laugh, color: 'text-sky-500', bg: 'bg-sky-50', label: '最高' },
+};
 import { format, parseISO } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import HealthLogModal from '@/components/HealthLogModal';
+import ExerciseLogModal from '@/components/ExerciseLogModal';
 
 export default function PetHistoryPage({ params }: { params: Promise<{ id: string }> }) {
     const { id: petId } = use(params);
     const router = useRouter();
     const { user } = useAuth({ middleware: 'auth' });
 
-    const [activeTab, setActiveTab] = useState<'ai' | 'health' | 'vaccine' | 'receipt' | 'checkup'>('ai');
+    const [activeTab, setActiveTab] = useState<'ai' | 'health' | 'exercise' | 'vaccine' | 'receipt' | 'checkup'>('ai');
     const [pet, setPet] = useState<any>(null);
     const [aiHistory, setAiHistory] = useState<any[]>([]);
     const [healthLogs, setHealthLogs] = useState<any[]>([]);
+    const [exerciseLogs, setExerciseLogs] = useState<any[]>([]);
     const [vaccineHistory, setVaccineHistory] = useState<any[]>([]);
     const [receiptHistory, setReceiptHistory] = useState<any[]>([]);
     const [checkupHistory, setCheckupHistory] = useState<any[]>([]);
@@ -57,12 +72,17 @@ export default function PetHistoryPage({ params }: { params: Promise<{ id: strin
     const [isHealthModalOpen, setIsHealthModalOpen] = useState(false);
     const [editingLog, setEditingLog] = useState<any>(null);
 
+    // 運動記録用状態
+    const [isExerciseModalOpen, setIsExerciseModalOpen] = useState(false);
+    const [editingExerciseLog, setEditingExerciseLog] = useState<any>(null);
+
     const fetchData = async () => {
         if (!petId) return;
         try {
-            const [petRes, logsRes] = await Promise.all([
+            const [petRes, logsRes, exerciseRes] = await Promise.all([
                 axios.get(`/api/pets/${petId}`),
-                axios.get(`/api/pets/${petId}/health-logs`)
+                axios.get(`/api/pets/${petId}/health-logs`),
+                axios.get(`/api/pets/${petId}/exercise-logs`)
             ]);
 
             setPet(petRes.data);
@@ -71,6 +91,7 @@ export default function PetHistoryPage({ params }: { params: Promise<{ id: strin
             ) : [];
             setAiHistory(sortedAiHistory);
             setHealthLogs(logsRes.data);
+            setExerciseLogs(exerciseRes.data);
 
             const vaccines = petRes.data.medical_events ? petRes.data.medical_events.filter((e: any) => e.vaccine_type !== null).sort((a: any, b: any) =>
                 new Date(b.event_date).getTime() - new Date(a.event_date).getTime()
@@ -114,6 +135,7 @@ export default function PetHistoryPage({ params }: { params: Promise<{ id: strin
         let currentHistory: any[] = [];
         if (activeTab === 'ai') currentHistory = aiHistory;
         else if (activeTab === 'health') currentHistory = healthLogs;
+        else if (activeTab === 'exercise') currentHistory = exerciseLogs;
         else if (activeTab === 'vaccine') currentHistory = vaccineHistory;
         else if (activeTab === 'receipt') currentHistory = receiptHistory;
         else if (activeTab === 'checkup') currentHistory = checkupHistory;
@@ -135,6 +157,7 @@ export default function PetHistoryPage({ params }: { params: Promise<{ id: strin
             
             if (activeTab === 'ai') endpoint = `/api/pets/${petId}/ai-diagnoses`;
             else if (activeTab === 'health') endpoint = `/api/pets/${petId}/health-logs/bulk`;
+            else if (activeTab === 'exercise') endpoint = `/api/pets/${petId}/exercise-logs/bulk`;
             else if (activeTab === 'vaccine') endpoint = `/api/pets/${petId}/medical-events/bulk`;
             else if (activeTab === 'receipt') endpoint = `/api/pets/${petId}/medical-receipts/bulk`;
             else if (activeTab === 'checkup') endpoint = `/api/pets/${petId}/health-checkup-results/bulk`;
@@ -164,6 +187,11 @@ export default function PetHistoryPage({ params }: { params: Promise<{ id: strin
     const handleHealthEdit = (log: any) => {
         setEditingLog(log);
         setIsHealthModalOpen(true);
+    };
+
+    const handleExerciseEdit = (log: any) => {
+        setEditingExerciseLog(log);
+        setIsExerciseModalOpen(true);
     };
 
     const handleBack = () => {
@@ -230,6 +258,17 @@ export default function PetHistoryPage({ params }: { params: Promise<{ id: strin
                             >
                                 <ClipboardList className="h-4 w-4" />
                                 健康記録
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('exercise')}
+                                className={`flex-shrink-0 px-4 py-4 text-sm font-bold border-b-2 transition-colors flex items-center justify-center gap-2 ${
+                                    activeTab === 'exercise'
+                                        ? 'border-indigo-600 text-indigo-600'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                                }`}
+                            >
+                                <Activity className="h-4 w-4" />
+                                運動記録
                             </button>
                             <button
                                 onClick={() => setActiveTab('vaccine')}
@@ -326,7 +365,7 @@ export default function PetHistoryPage({ params }: { params: Promise<{ id: strin
                                     </div>
                                     <div className="text-right">
                                         <div className="text-2xl font-bold text-indigo-600">
-                                            ¥{selectedReceipt.total_amount?.toLocaleString()}
+                                            ¥{Math.floor(selectedReceipt.total_amount ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                         </div>
                                         <button
                                             onClick={() => {
@@ -347,7 +386,7 @@ export default function PetHistoryPage({ params }: { params: Promise<{ id: strin
                                             {(typeof selectedReceipt.items === 'string' ? JSON.parse(selectedReceipt.items) : selectedReceipt.items).map((item: any, idx: number) => (
                                                 <div key={idx} className="flex justify-between text-sm">
                                                     <span className="text-gray-700">{item.name}</span>
-                                                    <span className="text-gray-900 font-medium">¥{item.price?.toLocaleString()}</span>
+                                                    <span className="text-gray-900 font-medium">¥{Math.floor(item.price ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
                                                 </div>
                                             ))}
                                         </div>
@@ -561,6 +600,99 @@ export default function PetHistoryPage({ params }: { params: Promise<{ id: strin
                             ))
                         )}
                     </div>
+                ) : activeTab === 'exercise' ? (
+                    /* 運動記録一覧 */
+                    <div className="space-y-4">
+                        {isEditMode && exerciseLogs.length > 0 && (
+                            <div className="flex items-center justify-between bg-indigo-50 p-4 rounded-xl border border-indigo-100 mb-4">
+                                <button
+                                    onClick={toggleSelectAll}
+                                    className="flex items-center text-sm font-medium text-indigo-700"
+                                >
+                                    {selectedIds.length === exerciseLogs.length ? (
+                                        <CheckSquare className="h-5 w-5 mr-2" />
+                                    ) : (
+                                        <Square className="h-5 w-5 mr-2" />
+                                    )}
+                                    すべて選択 ({selectedIds.length})
+                                </button>
+                                <button
+                                    onClick={() => setShowDeleteConfirm(true)}
+                                    disabled={selectedIds.length === 0}
+                                    className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors text-sm font-bold shadow-sm"
+                                >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    一括削除
+                                </button>
+                            </div>
+                        )}
+
+                        {exerciseLogs.length === 0 ? (
+                            <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-gray-300">
+                                <Activity className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                                <p className="text-gray-500 font-medium">運動記録がまだありません</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                {exerciseLogs.map((log) => (
+                                    <div key={log.id} className="relative flex items-center group w-full overflow-hidden">
+                                        {isEditMode && (
+                                            <button
+                                                onClick={() => toggleSelect(log.id)}
+                                                className="mr-3 p-1 text-indigo-600 flex-shrink-0"
+                                            >
+                                                {selectedIds.includes(log.id) ? (
+                                                    <CheckSquare className="h-6 w-6" />
+                                                ) : (
+                                                    <Square className="h-6 w-6" />
+                                                )}
+                                            </button>
+                                        )}
+                                        <div 
+                                            onClick={() => isEditMode && toggleSelect(log.id)}
+                                            className={`flex-grow bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden transition-all ${
+                                                isEditMode
+                                                    ? (selectedIds.includes(log.id) ? 'border-indigo-300 bg-indigo-50/30' : 'hover:border-gray-300')
+                                                    : 'hover:shadow-md'
+                                            }`}
+                                        >
+                                            <div className="p-4 border-b border-gray-50 flex items-center justify-between bg-gray-50/50">
+                                                <span className="font-bold text-gray-700 flex items-center">
+                                                    <Calendar className="h-4 w-4 mr-2 text-indigo-500" />
+                                                    {format(parseISO(log.logged_at), 'yyyy年MM月dd日(E)', { locale: ja })}
+                                                </span>
+                                                {!isEditMode && (
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleExerciseEdit(log);
+                                                        }}
+                                                        className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-all"
+                                                    >
+                                                        <Edit2 className="h-4 w-4" />
+                                                    </button>
+                                                )}
+                                            </div>
+                                            <div className="p-4">
+                                                <div className="flex flex-wrap gap-4">
+                                                    <div className="flex items-center text-sm text-gray-600 bg-emerald-50/50 px-3 py-1.5 rounded-full border border-emerald-100/50">
+                                                        <Activity className="h-4 w-4 mr-2 text-emerald-500" />
+                                                        <span className="font-medium">{log.duration_minutes}分</span>
+                                                    </div>
+                                                </div>
+                                                {log.memo && (
+                                                    <div className="mt-4 p-3 bg-gray-50 rounded-xl text-sm text-gray-600 flex items-start border border-gray-100">
+                                                        <Clipboard className="h-4 w-4 mr-2 mt-0.5 text-gray-400 flex-shrink-0" />
+                                                        <p className="whitespace-pre-wrap">{log.memo}</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 ) : activeTab === 'vaccine' ? (
                     /* ワクチン一覧 */
                     <div className="space-y-4">
@@ -708,7 +840,7 @@ export default function PetHistoryPage({ params }: { params: Promise<{ id: strin
                                                 {item.clinic_name || '病院名不明'}
                                             </p>
                                             <p className="text-indigo-600 font-bold text-sm">
-                                                ¥{item.total_amount?.toLocaleString()}
+                                                ¥{Math.floor(item.total_amount ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                             </p>
                                         </div>
                                         {!isEditMode && <ChevronRight className="h-5 w-5 text-gray-400" />}
@@ -871,33 +1003,24 @@ export default function PetHistoryPage({ params }: { params: Promise<{ id: strin
                                                 )}
                                             </div>
                                             <div className="p-4">
-                                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                                                <div className="flex flex-wrap gap-4">
+                                                    {log.condition && (
+                                                        <div className={`flex items-center px-3 py-1.5 rounded-full ${conditionIcons[log.condition]?.bg || 'bg-gray-50'} border border-transparent`}>
+                                                            {(() => {
+                                                                const Icon = conditionIcons[log.condition]?.icon || Meh;
+                                                                return <Icon className={`h-4 w-4 mr-2 ${conditionIcons[log.condition]?.color || 'text-gray-400'}`} />;
+                                                            })()}
+                                                            <span className={`text-sm font-bold ${conditionIcons[log.condition]?.color || 'text-gray-600'}`}>
+                                                                {conditionIcons[log.condition]?.label || '普通'}
+                                                            </span>
+                                                        </div>
+                                                    )}
                                                     {log.weight && (
-                                                        <div className="flex items-center text-sm text-gray-600">
+                                                        <div className="flex items-center text-sm text-gray-600 bg-blue-50/50 px-3 py-1.5 rounded-full border border-blue-100/50">
                                                             <Scale className="h-4 w-4 mr-2 text-blue-500" />
-                                                            <span>{log.weight}kg</span>
+                                                            <span className="font-medium">{log.weight}kg</span>
                                                         </div>
                                                     )}
-                                                    {log.meal_amount && (
-                                                        <div className="flex items-center text-sm text-gray-600">
-                                                            <Utensils className="h-4 w-4 mr-2 text-orange-500" />
-                                                            <span>{log.meal_amount}</span>
-                                                        </div>
-                                                    )}
-                                                    {log.exercise_duration > 0 && (
-                                                        <div className="flex items-center text-sm text-gray-600">
-                                                            <Activity className="h-4 w-4 mr-2 text-green-500" />
-                                                            <span>{log.exercise_duration}分</span>
-                                                        </div>
-                                                    )}
-                                                    <div className="flex items-center text-sm text-gray-600">
-                                                        <TrashIcon className="h-4 w-4 mr-2 text-amber-600" />
-                                                        <span>便: {log.stool_status}</span>
-                                                    </div>
-                                                    <div className="flex items-center text-sm text-gray-600">
-                                                        <Droplets className="h-4 w-4 mr-2 text-blue-400" />
-                                                        <span>尿: {log.urine_status}</span>
-                                                    </div>
                                                 </div>
                                                 {log.memo && (
                                                     <div className="mt-4 p-3 bg-gray-50 rounded-xl text-sm text-gray-600 flex items-start border border-gray-100">
@@ -960,6 +1083,15 @@ export default function PetHistoryPage({ params }: { params: Promise<{ id: strin
                     pet={pet}
                     editingLog={editingLog}
                     onClose={() => setIsHealthModalOpen(false)}
+                    onSuccess={fetchData}
+                />
+            )}
+            {/* 運動記録用モーダル */}
+            {isExerciseModalOpen && (
+                <ExerciseLogModal
+                    pet={pet}
+                    editingLog={editingExerciseLog}
+                    onClose={() => setIsExerciseModalOpen(false)}
                     onSuccess={fetchData}
                 />
             )}

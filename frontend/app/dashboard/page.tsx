@@ -38,25 +38,41 @@ import {
     Loader2,
     X,
     CheckCircle2,
-    Receipt
+    Receipt,
+    Smile,
+    Frown,
+    Meh,
+    Laugh,
+    Angry
 } from 'lucide-react';
 import { format, differenceInYears, differenceInMonths, subDays, isSameDay, parseISO } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import HealthLogModal from '@/components/HealthLogModal';
+import ExerciseLogModal from '@/components/ExerciseLogModal';
 import VaccinationCertificateModal from '@/components/VaccinationCertificateModal';
 import MedicalReceiptUploadModal from '@/components/MedicalReceiptUploadModal';
 import HealthCheckupResultUploadModal from '@/components/HealthCheckupResultUploadModal';
 
+const conditions = [
+    { value: 1, label: '最悪', icon: Angry, color: 'text-rose-500', bg: 'bg-rose-50', active: 'bg-rose-500 text-white' },
+    { value: 2, label: '悪い', icon: Frown, color: 'text-orange-500', bg: 'bg-orange-50', active: 'bg-orange-500 text-white' },
+    { value: 3, label: '普通', icon: Meh, color: 'text-amber-500', bg: 'bg-amber-50', active: 'bg-amber-500 text-white' },
+    { value: 4, label: '良い', icon: Smile, color: 'text-emerald-500', bg: 'bg-emerald-50', active: 'bg-emerald-500 text-white' },
+    { value: 5, label: '最高', icon: Laugh, color: 'text-sky-500', bg: 'bg-sky-50', active: 'bg-sky-500 text-white' },
+];
+
 const Dashboard = () => {
     const { user, logout } = useAuth({ middleware: 'auth' });
     const [selectedPetForLog, setSelectedPetForLog] = useState<any>(null);
+    const [selectedPetForExercise, setSelectedPetForExercise] = useState<any>(null);
     const [selectedPetForCertificate, setSelectedPetForCertificate] = useState<any>(null);
     const [selectedPetForReceipt, setSelectedPetForReceipt] = useState<any>(null);
     const [selectedPetForHealthCheckup, setSelectedPetForHealthCheckup] = useState<any>(null);
     const [viewingCertificate, setViewingCertificate] = useState<any>(null);
     const [editingLog, setEditingLog] = useState<any>(null);
+    const [editingExerciseLog, setEditingExerciseLog] = useState<any>(null);
     const [activePetId, setActivePetId] = useState<number | null>(null);
     const [isHospitalsExpanded, setIsHospitalsExpanded] = useState(false);
     const [isWeatherExpanded, setIsWeatherExpanded] = useState(false);
@@ -149,19 +165,19 @@ const Dashboard = () => {
         return `${years}歳${months}ヶ月`;
     };
 
-    const getWeeklyExerciseData = (healthLogs: any[]) => {
+    const getWeeklyExerciseData = (exerciseLogs: any[]) => {
         const today = new Date();
         const data = [];
         
         for (let i = 6; i >= 0; i--) {
             const date = subDays(today, i);
             const dateStr = format(date, 'yyyy-MM-dd');
-            const log = healthLogs.find(l => isSameDay(parseISO(l.logged_at), date));
+            const log = exerciseLogs.find(l => isSameDay(parseISO(l.logged_at), date));
             
             data.push({
                 date: dateStr,
                 displayDate: format(date, 'MM/dd(E)', { locale: ja }),
-                exercise_duration: log?.exercise_duration || 0,
+                duration_minutes: log?.duration_minutes || 0,
             });
         }
         
@@ -456,6 +472,13 @@ const Dashboard = () => {
                                                 <PlusCircle className="h-4 w-4 mr-1.5" />
                                                 記録
                                             </button>
+                                            <button 
+                                                onClick={() => setSelectedPetForExercise(activePet)}
+                                                className={`flex-shrink-0 px-4 py-2 text-xs bg-white/70 backdrop-blur-sm border border-slate-200 rounded-xl shadow-sm hover:bg-white hover:-translate-y-0.5 hover:shadow-md transition-all flex items-center font-bold text-emerald-600`}
+                                            >
+                                                <Activity className="h-4 w-4 mr-1.5" />
+                                                運動
+                                            </button>
                                             <Link 
                                                 href={`/pets/${activePet.id}/ai-diagnose`}
                                                 className={`flex-shrink-0 px-4 py-2 text-xs text-white rounded-xl shadow-lg shadow-slate-200 hover:-translate-y-0.5 hover:shadow-xl transition-all font-bold flex items-center ${theme.bg} ${theme.hover}`}
@@ -565,7 +588,7 @@ const Dashboard = () => {
                                                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-0.5">合計</span>
                                                     <div>
                                                         <span className="text-xl font-black text-slate-800 tracking-tighter">
-                                                            {getWeeklyExerciseData(activePet.health_logs).reduce((acc, curr) => acc + (curr.exercise_duration || 0), 0)}
+                                                            {getWeeklyExerciseData(activePet.exercise_logs).reduce((acc, curr) => acc + (curr.duration_minutes || 0), 0)}
                                                         </span>
                                                         <span className="text-[10px] font-bold text-slate-500 ml-1">分</span>
                                                     </div>
@@ -574,7 +597,7 @@ const Dashboard = () => {
                                                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-0.5">1日平均</span>
                                                     <div>
                                                         <span className="text-xl font-black text-slate-800 tracking-tighter">
-                                                            {Math.round(getWeeklyExerciseData(activePet.health_logs).reduce((acc, curr) => acc + (curr.exercise_duration || 0), 0) / 7)}
+                                                            {Math.round(getWeeklyExerciseData(activePet.exercise_logs).reduce((acc, curr) => acc + (curr.duration_minutes || 0), 0) / 7)}
                                                         </span>
                                                         <span className="text-[10px] font-bold text-slate-500 ml-1">分</span>
                                                     </div>
@@ -584,7 +607,7 @@ const Dashboard = () => {
                                         <div className="h-44 w-full">
                                             <ResponsiveContainer width="100%" height="100%">
                                                 <BarChart 
-                                                    data={getWeeklyExerciseData(activePet.health_logs)}
+                                                    data={getWeeklyExerciseData(activePet.exercise_logs)}
                                                     margin={{ left: 0, right: 30, top: 5, bottom: 5 }}
                                                 >
                                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
@@ -610,11 +633,11 @@ const Dashboard = () => {
                                                             }
                                                             return value;
                                                         }}
-                                                        formatter={(value) => [`${value} 分`, '散歩時間']}
+                                                        formatter={(value) => [`${value} 分`, '運動時間']}
                                                     />
-                                                    <Bar dataKey="exercise_duration" radius={[2, 2, 0, 0]}>
-                                                        {getWeeklyExerciseData(activePet.health_logs).map((entry, index) => (
-                                                            <Cell key={`cell-${index}`} fill={entry.exercise_duration > 0 ? '#10b981' : '#e5e7eb'} />
+                                                    <Bar dataKey="duration_minutes" radius={[2, 2, 0, 0]}>
+                                                        {getWeeklyExerciseData(activePet.exercise_logs).map((entry, index) => (
+                                                            <Cell key={`cell-${index}`} fill={entry.duration_minutes > 0 ? '#10b981' : '#e5e7eb'} />
                                                         ))}
                                                     </Bar>
                                                 </BarChart>
@@ -791,7 +814,7 @@ const Dashboard = () => {
                                                             {format(parseISO(activePet.medical_receipts[0].receipt_date), 'yyyy/MM/dd')}
                                                         </div>
                                                         <div className="text-xs font-black text-indigo-600">
-                                                            ¥{Number(activePet.medical_receipts[0].total_amount).toLocaleString()}
+                                                            ¥{Math.floor(Number(activePet.medical_receipts[0].total_amount) || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                                         </div>
                                                     </div>
                                                     <p className="text-[11px] text-slate-700 font-bold truncate">
@@ -905,20 +928,9 @@ const Dashboard = () => {
                                                                     {log.weight}kg
                                                                 </div>
                                                             )}
-                                                            {log.exercise_duration && (
-                                                                <div className="flex items-center text-xs font-black text-slate-700 tracking-tight">
-                                                                    <div className="h-6 w-6 rounded-lg bg-emerald-50 flex items-center justify-center mr-2 shadow-sm">
-                                                                        <Activity className="h-3 w-3 text-emerald-400" />
-                                                                    </div>
-                                                                    {log.exercise_duration}分
-                                                                </div>
-                                                            )}
                                                             <div className="flex flex-wrap gap-1.5 mt-2 pt-1">
-                                                                <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black shadow-sm ${log.stool_status === '普通' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
-                                                                    便:{log.stool_status}
-                                                                </span>
-                                                                <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black shadow-sm ${log.urine_status === '普通' ? 'bg-blue-50 text-blue-600' : 'bg-amber-50 text-amber-600'}`}>
-                                                                    尿:{log.urine_status}
+                                                                <span className="px-2 py-0.5 rounded-lg text-[9px] font-black shadow-sm bg-emerald-50 text-emerald-600">
+                                                                    状態:{conditions.find(c => c.value === log.condition)?.label || '不明'}
                                                                 </span>
                                                             </div>
                                                         </div>
@@ -1224,6 +1236,18 @@ const Dashboard = () => {
                     onClose={() => {
                         setSelectedPetForLog(null);
                         setEditingLog(null);
+                    }} 
+                    onSuccess={() => mutate()}
+                />
+            )}
+
+            {selectedPetForExercise && (
+                <ExerciseLogModal 
+                    pet={selectedPetForExercise} 
+                    editingLog={editingExerciseLog}
+                    onClose={() => {
+                        setSelectedPetForExercise(null);
+                        setEditingExerciseLog(null);
                     }} 
                     onSuccess={() => mutate()}
                 />

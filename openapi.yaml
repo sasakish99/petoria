@@ -201,16 +201,12 @@ paths:
             schema:
               type: object
               required:
+                - condition
                 - logged_at
               properties:
-                meal_amount:
+                condition:
                   type: integer
-                stool_status:
-                  type: string
-                urine_status:
-                  type: string
-                exercise_duration:
-                  type: integer
+                  description: '1:最悪, 2:悪い, 3:普通, 4:良い, 5:最高'
                 weight:
                   type: number
                 memo:
@@ -283,6 +279,120 @@ paths:
       summary: 健康記録削除
       tags:
         - HealthLog
+      security:
+        - sanctum: []
+      responses:
+        '204':
+          description: 削除成功
+  /pets/{pet}/exercise-logs:
+    parameters:
+      - name: pet
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      summary: 運動記録一覧取得
+      tags:
+        - ExerciseLog
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ExerciseLog'
+    post:
+      summary: 運動記録保存
+      tags:
+        - ExerciseLog
+      security:
+        - sanctum: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - duration_minutes
+                - logged_at
+              properties:
+                duration_minutes:
+                  type: integer
+                memo:
+                  type: string
+                logged_at:
+                  type: string
+                  format: date
+      responses:
+        '201':
+          description: 作成成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExerciseLog'
+  /pets/{pet}/exercise-logs/bulk:
+    parameters:
+      - name: pet
+        in: path
+        required: true
+        schema:
+          type: integer
+    delete:
+      summary: 運動記録複数削除
+      tags:
+        - ExerciseLog
+      security:
+        - sanctum: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - ids
+              properties:
+                ids:
+                  type: array
+                  items:
+                    type: integer
+      responses:
+        '204':
+          description: 削除成功
+  /pets/{pet}/exercise-logs/{exerciseLog}:
+    parameters:
+      - name: pet
+        in: path
+        required: true
+        schema:
+          type: integer
+      - name: exerciseLog
+        in: path
+        required: true
+        schema:
+          type: integer
+    put:
+      summary: 運動記録更新
+      tags:
+        - ExerciseLog
+      security:
+        - sanctum: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExerciseLog'
+      responses:
+        '200':
+          description: 更新成功
+    delete:
+      summary: 運動記録削除
+      tags:
+        - ExerciseLog
       security:
         - sanctum: []
       responses:
@@ -384,15 +494,24 @@ components:
           type: integer
         pet_id:
           type: integer
+        condition:
+          type: integer
+          description: '1:最悪, 2:悪い, 3:普通, 4:良い, 5:最高'
         weight:
           type: number
-        meal_amount:
+        memo:
+          type: string
+        logged_at:
+          type: string
+          format: date
+    ExerciseLog:
+      type: object
+      properties:
+        id:
           type: integer
-        stool_status:
-          type: string
-        urine_status:
-          type: string
-        exercise_duration:
+        pet_id:
+          type: integer
+        duration_minutes:
           type: integer
         memo:
           type: string

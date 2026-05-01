@@ -50,13 +50,20 @@
 | :--- | :--- | :--- |
 | id | bigint | プライマリキー |
 | pet_id | foreignId | pets.id への外部参照 |
+| condition | integer | 今日の状態 (1:最悪, 2:悪い, 3:普通, 4:良い, 5:最高) |
 | weight | decimal | 体重 (kg) (nullable) |
-| meal_amount | integer | 食事量 (nullable) |
-| stool_status | string | 便の状態 (nullable) |
-| urine_status | string | 尿の状態 (nullable) |
-| exercise_duration | integer | 散歩・運動時間 (分) (nullable) |
 | memo | text | メモ (nullable) |
 | logged_at | date | 記録日 |
+| timestamps | - | 作成・更新日時 |
+
+### exercise_logs (運動記録)
+| カラム名 | 型 | 説明 |
+| :--- | :--- | :--- |
+| id | bigint | プライマリキー |
+| pet_id | foreignId | pets.id への外部参照 |
+| duration_minutes | integer | 運動時間 (分) |
+| memo | text | メモ (nullable) |
+| logged_at | dateTime | 記録日時 |
 | timestamps | - | 作成・更新日時 |
 
 ### weight_logs (体重記録 - 旧形式/移行中)
@@ -151,7 +158,7 @@ Swagger UI 等を利用して閲覧することが可能です。
 
 ### 履歴画面
 - 各種記録をカテゴリ別に一覧表示・詳細確認・削除が可能。
-- **タブ構成**: 「AI健康診断」「健康記録」「ワクチン」「診療明細」「健康診断」の5カテゴリ。
+- **タブ構成**: 「AI健康診断」「健康記録」「運動記録」「ワクチン」「診療明細」「健康診断」の6カテゴリ。
 - **一括削除**: 選択モード（整理する）により、複数の記録をまとめて削除可能。
 - **詳細表示**: 解析された項目の詳細や、アップロードした画像の確認が可能。
 

@@ -43,6 +43,11 @@ class Pet extends Model
         return $this->hasMany(HealthLog::class);
     }
 
+    public function exerciseLogs()
+    {
+        return $this->hasMany(ExerciseLog::class);
+    }
+
     public function medicalEvents()
     {
         return $this->hasMany(MedicalEvent::class);
