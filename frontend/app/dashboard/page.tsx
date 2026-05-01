@@ -33,7 +33,10 @@ import {
     ChevronDown,
     ChevronUp,
     Phone,
-    ExternalLink
+    Clock,
+    ExternalLink,
+    Loader2,
+    X
 } from 'lucide-react';
 import { format, differenceInYears, differenceInMonths, subDays, isSameDay, parseISO } from 'date-fns';
 import { ja } from 'date-fns/locale';
@@ -47,6 +50,65 @@ const Dashboard = () => {
     const [activePetId, setActivePetId] = useState<number | null>(null);
     const [isHospitalsExpanded, setIsHospitalsExpanded] = useState(false);
     const [isWeatherExpanded, setIsWeatherExpanded] = useState(false);
+    const [location, setLocation] = useState<{lat: number, lon: number} | null>(null);
+    const [locationError, setLocationError] = useState<string | null>(null);
+    const [isRequestingLocation, setIsRequestingLocation] = useState(false);
+    const [isLocationCardDismissed, setIsLocationCardDismissed] = useState(false);
+
+    // マウント時にlocalStorageから位置情報カードの非表示状態を復元
+    useEffect(() => {
+        const dismissed = localStorage.getItem('isLocationCardDismissed');
+        if (dismissed === 'true') {
+            setIsLocationCardDismissed(true);
+        }
+    }, []);
+
+    // 位置情報カードを閉じる
+    const handleDismissLocationCard = () => {
+        setIsLocationCardDismissed(true);
+        localStorage.setItem('isLocationCardDismissed', 'true');
+    };
+
+    // ブラウザから位置情報を取得する関数
+    const handleRequestLocation = () => {
+        if (!navigator.geolocation) {
+            setLocationError('お使いのブラウザは位置情報に対応していません。');
+            return;
+        }
+
+        setIsRequestingLocation(true);
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                const newLocation = {
+                    lat: position.coords.latitude,
+                    lon: position.coords.longitude
+                };
+                setLocation(newLocation);
+                setIsRequestingLocation(false);
+
+                // サーバーに位置情報を保存（オプション）
+                try {
+                    await axios.put('/api/user', {
+                        latitude: newLocation.lat,
+                        longitude: newLocation.lon
+                    });
+                    // 位置情報を保存できたらユーザー情報を再取得するか、
+                    // ローカルのlocationステートで十分なはず
+                } catch (e: any) {
+                    console.error('Failed to save location to profile:', e.response?.data || e.message);
+                }
+            },
+            (error) => {
+                console.error('Geolocation error:', error);
+                setIsRequestingLocation(false);
+                if (error.code === error.PERMISSION_DENIED) {
+                    setLocationError('位置情報の利用が許可されませんでした。');
+                } else {
+                    setLocationError('位置情報の取得に失敗しました。');
+                }
+            }
+        );
+    };
 
     // マウント時にlocalStorageから最後に選択したペットIDを復元
     useEffect(() => {
@@ -96,8 +158,12 @@ const Dashboard = () => {
         return data;
     };
     
-    const { data: dashboardData, error, mutate } = useSWR('/api/dashboard', () =>
-        axios.get('/api/dashboard').then(res => res.data),
+    const { data: dashboardData, error, mutate } = useSWR(
+        ['/api/dashboard', location],
+        () => {
+            const params = location ? `?lat=${location.lat}&lon=${location.lon}` : '';
+            return axios.get(`/api/dashboard${params}`).then(res => res.data);
+        },
         {
             onSuccess: (data) => {
                 // localStorageに保存されているIDが取得したペットリストに含まれているか確認
@@ -120,12 +186,12 @@ const Dashboard = () => {
 
     const getThemeColors = (color: string) => {
         const colors: Record<string, any> = {
-            indigo: { bg: 'bg-indigo-600', hover: 'hover:bg-indigo-700', text: 'text-indigo-600', light: 'bg-indigo-50/50', border: 'border-indigo-100/50', dot: '#4f46e5' },
-            rose: { bg: 'bg-rose-500', hover: 'hover:bg-rose-600', text: 'text-rose-600', light: 'bg-rose-50/50', border: 'border-rose-100/50', dot: '#f43f5e' },
-            amber: { bg: 'bg-amber-500', hover: 'hover:bg-amber-600', text: 'text-amber-600', light: 'bg-amber-50/50', border: 'border-amber-100/50', dot: '#f59e0b' },
-            emerald: { bg: 'bg-emerald-500', hover: 'hover:bg-emerald-600', text: 'text-emerald-600', light: 'bg-emerald-50/50', border: 'border-emerald-100/50', dot: '#10b981' },
-            blue: { bg: 'bg-blue-500', hover: 'hover:bg-blue-600', text: 'text-blue-600', light: 'bg-blue-50/50', border: 'border-blue-100/50', dot: '#3b82f6' },
-            slate: { bg: 'bg-slate-700', hover: 'hover:bg-slate-800', text: 'text-slate-700', light: 'bg-slate-100/50', border: 'border-slate-200/50', dot: '#334155' },
+            indigo: { bg: 'bg-indigo-600', hover: 'hover:bg-indigo-700', text: 'text-indigo-600', light: 'bg-indigo-50/50', border: 'border-indigo-100/50', ring: 'ring-indigo-100', dot: '#4f46e5' },
+            rose: { bg: 'bg-rose-500', hover: 'hover:bg-rose-600', text: 'text-rose-600', light: 'bg-rose-50/50', border: 'border-rose-100/50', ring: 'ring-rose-100', dot: '#f43f5e' },
+            amber: { bg: 'bg-amber-500', hover: 'hover:bg-amber-600', text: 'text-amber-600', light: 'bg-amber-50/50', border: 'border-amber-100/50', ring: 'ring-amber-100', dot: '#f59e0b' },
+            emerald: { bg: 'bg-emerald-500', hover: 'hover:bg-emerald-600', text: 'text-emerald-600', light: 'bg-emerald-50/50', border: 'border-emerald-100/50', ring: 'ring-emerald-100', dot: '#10b981' },
+            blue: { bg: 'bg-blue-500', hover: 'hover:bg-blue-600', text: 'text-blue-600', light: 'bg-blue-50/50', border: 'border-blue-100/50', ring: 'ring-blue-100', dot: '#3b82f6' },
+            slate: { bg: 'bg-slate-700', hover: 'hover:bg-slate-800', text: 'text-slate-700', light: 'bg-slate-100/50', border: 'border-slate-200/50', ring: 'ring-slate-200', dot: '#334155' },
         };
         return colors[color] || colors.slate;
     };
@@ -167,7 +233,7 @@ const Dashboard = () => {
         : null;
 
     return (
-        <div className="h-[calc(100vh-64px)] bg-slate-50 flex flex-col overflow-hidden">
+        <div className="h-[calc(100vh-80px)] bg-slate-50 flex flex-col overflow-hidden">
             <div className="flex-1 flex overflow-hidden">
                 {/* サイドバー - ペットセレクター */}
                 {hasPets && (
@@ -176,19 +242,19 @@ const Dashboard = () => {
                             <div className="px-3 pb-2 text-[11px] font-black text-slate-400 uppercase tracking-widest hidden md:block">
                                 うちの子
                             </div>
-                            {dashboardData.pets.map((pet: any) => {
+                            {dashboardData.pets.map((pet: any, index: number) => {
                                 const petTheme = getThemeColors(pet.theme_color || 'slate');
                                 return (
                                     <button
                                         key={pet.id}
                                         onClick={() => setActivePetId(pet.id)}
-                                        className={`w-full flex items-center p-2.5 rounded-2xl transition-all duration-200 ${
+                                        className={`w-full flex items-center p-2 rounded-2xl transition-all duration-300 group active:scale-[0.98] ${
                                             activePetId === pet.id 
-                                                ? `${petTheme.light} ${petTheme.text} shadow-sm shadow-slate-200/50 ring-1 ring-inset ${petTheme.border}` 
-                                                : 'text-slate-500 hover:bg-white/50 hover:text-slate-800'
+                                                ? `${petTheme.light} ${petTheme.text} shadow-[0_4px_12px_rgba(0,0,0,0.05)] ring-1 ring-inset ${petTheme.border}` 
+                                                : 'text-slate-500 hover:bg-white/60 hover:text-slate-800 hover:shadow-sm'
                                         }`}
                                     >
-                                        <div className={`h-11 w-11 rounded-2xl flex-shrink-0 flex items-center justify-center text-white font-bold overflow-hidden shadow-sm ${petTheme.bg}`}>
+                                        <div className={`h-10 w-10 rounded-[14px] flex-shrink-0 flex items-center justify-center text-white font-bold overflow-hidden shadow-sm transition-transform duration-300 group-hover:scale-105 ${petTheme.bg} ${activePetId === pet.id ? 'ring-2 ring-white ring-offset-2 ' + petTheme.ring : ''}`}>
                                             {pet.image_path ? (
                                                 <img 
                                                     src={pet.image_path.startsWith('http') ? pet.image_path : `${process.env.NEXT_PUBLIC_BACKEND_URL}/storage/${pet.image_path}`} 
@@ -196,25 +262,28 @@ const Dashboard = () => {
                                                     className="h-full w-full object-cover" 
                                                 />
                                             ) : (
-                                                pet.name.substring(0, 1)
+                                                <span className="text-lg">{pet.name.substring(0, 1)}</span>
                                             )}
                                         </div>
-                                        <div className="ml-3 text-left hidden md:block">
-                                            <div className="flex items-center gap-1.5">
-                                                <div className="text-sm font-bold truncate tracking-tight">{pet.name}</div>
+                                        <div className="ml-3 text-left hidden md:block overflow-hidden">
+                                            <div className="flex items-center gap-1.5 mb-0.5">
+                                                <div className="text-sm font-black truncate tracking-tight">{pet.name}</div>
                                                 {pet.gender && (
-                                                    <span className={`flex-shrink-0 text-[10px] font-black px-1.5 py-0.5 rounded-lg ${
-                                                        pet.gender === 'male' ? 'bg-blue-50 text-blue-600' : 
-                                                        pet.gender === 'female' ? 'bg-rose-50 text-rose-600' : 
-                                                        'bg-slate-100 text-slate-500'
-                                                    }`}>
-                                                        {pet.gender === 'male' ? 'オス' : pet.gender === 'female' ? 'メス' : '不明'}
-                                                    </span>
+                                                    <div className={`flex-shrink-0 w-1.5 h-1.5 rounded-full ${
+                                                        pet.gender === 'male' ? 'bg-blue-400' : 
+                                                        pet.gender === 'female' ? 'bg-rose-400' : 
+                                                        'bg-slate-300'
+                                                    }`} />
                                                 )}
                                             </div>
-                                            <div className="text-[11px] font-medium opacity-60 truncate max-w-[120px]">
-                                                {pet.breed?.name ?? ''}
-                                                {pet.birthday && ` (${calculateAge(pet.birthday)})`}
+                                            <div className="text-[10px] font-bold opacity-50 truncate tracking-wide flex items-center">
+                                                <span className="truncate">{pet.breed?.name ?? '品種不明'}</span>
+                                                {pet.birthday && (
+                                                    <>
+                                                        <span className="mx-1 opacity-30">•</span>
+                                                        <span className="shrink-0">{calculateAge(pet.birthday)}</span>
+                                                    </>
+                                                )}
                                             </div>
                                         </div>
                                     </button>
@@ -222,12 +291,12 @@ const Dashboard = () => {
                             })}
                             <Link 
                                 href="/pets/create"
-                                className="w-full flex items-center p-2.5 rounded-2xl text-slate-400 hover:bg-white/50 hover:text-slate-600 transition-all border-2 border-dashed border-slate-200/60"
+                                className="w-full flex items-center p-2 rounded-2xl text-slate-400 hover:bg-white/60 hover:text-slate-600 transition-all border-2 border-dashed border-slate-200/60 group active:scale-[0.98]"
                             >
-                                <div className="h-11 w-11 rounded-2xl flex-shrink-0 flex items-center justify-center bg-slate-50 border border-slate-100">
-                                    <PlusCircle className="h-6 w-6" />
+                                <div className="h-10 w-10 rounded-[14px] flex-shrink-0 flex items-center justify-center bg-slate-50/50 border border-slate-100 transition-colors group-hover:bg-white group-hover:border-slate-200">
+                                    <PlusCircle className="h-5 w-5 transition-transform group-hover:rotate-90 duration-300" />
                                 </div>
-                                <div className="ml-3 text-sm font-bold hidden md:block">追加する</div>
+                                <div className="ml-3 text-sm font-black hidden md:block">追加する</div>
                             </Link>
                         </div>
                     </aside>
@@ -237,16 +306,17 @@ const Dashboard = () => {
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         {/* モバイル用ペットセレクター */}
                         {hasPets && (
-                            <div className="flex sm:hidden overflow-x-auto pb-2 space-x-3 scrollbar-hide">
-                                {dashboardData.pets.map((pet: any) => {
+                            <div className="flex sm:hidden overflow-x-auto pb-4 pt-2 space-x-4 scrollbar-hide px-4 -mx-4">
+                                {dashboardData.pets.map((pet: any, index: number) => {
                                     const petTheme = getThemeColors(pet.theme_color || 'indigo');
+                                    const isActive = activePetId === pet.id;
                                     return (
                                         <button
                                             key={pet.id}
                                             onClick={() => setActivePetId(pet.id)}
-                                            className={`flex-shrink-0 flex flex-col items-center space-y-1 ${activePetId === pet.id ? petTheme.text : 'text-gray-400'}`}
+                                            className={`flex-shrink-0 flex flex-col items-center space-y-2 transition-all duration-300 active:scale-90 ${isActive ? 'scale-105' : 'opacity-70'}`}
                                         >
-                                            <div className={`h-14 w-14 rounded-full flex items-center justify-center text-white text-lg font-bold shadow-sm overflow-hidden ${petTheme.bg} ${activePetId === pet.id ? 'ring-4 ring-white' : 'opacity-60'}`}>
+                                            <div className={`h-12 w-12 rounded-[14px] flex items-center justify-center text-white text-lg font-black shadow-md overflow-hidden transition-all duration-300 ${petTheme.bg} ${isActive ? 'ring-4 ring-white shadow-indigo-200/50' : ''}`}>
                                                 {pet.image_path ? (
                                                     <img 
                                                         src={pet.image_path.startsWith('http') ? pet.image_path : `${process.env.NEXT_PUBLIC_BACKEND_URL}/storage/${pet.image_path}`} 
@@ -257,34 +327,27 @@ const Dashboard = () => {
                                                     pet.name.substring(0, 1)
                                                 )}
                                             </div>
-                                            <div className="flex items-center gap-1">
-                                                <span className="text-[11px] font-bold truncate max-w-[60px] text-center">{pet.name}</span>
-                                                {pet.gender && (
-                                                    <span className={`flex-shrink-0 text-[8px] font-bold px-0.5 rounded-full ${
-                                                        pet.gender === 'male' ? 'text-blue-600' : 
-                                                        pet.gender === 'female' ? 'text-rose-600' : 
-                                                        'text-gray-500'
-                                                    }`}>
-                                                        {pet.gender === 'male' ? 'オス' : pet.gender === 'female' ? 'メス' : '不明'}
-                                                    </span>
+                                            <div className="flex flex-col items-center min-h-[1.5rem] justify-center">
+                                                <span className={`text-[11px] font-black truncate max-w-[72px] text-center tracking-tight leading-tight ${isActive ? 'text-slate-800' : 'text-slate-500'}`}>
+                                                    {pet.name}
+                                                </span>
+                                                {isActive && (
+                                                    <div className={`h-1 w-1 rounded-full mt-0.5 ${petTheme.bg}`} />
                                                 )}
                                             </div>
-                                            {pet.birthday && (
-                                                <span className="text-[9px] opacity-70 whitespace-nowrap">
-                                                    {calculateAge(pet.birthday)}
-                                                </span>
-                                            )}
                                         </button>
                                     );
                                 })}
                                 <Link 
                                     href="/pets/create"
-                                    className="flex-shrink-0 flex flex-col items-center space-y-1 text-gray-400"
+                                    className="flex-shrink-0 flex flex-col items-center space-y-2 text-slate-400 active:scale-90"
                                 >
-                                    <div className="h-14 w-14 rounded-full flex items-center justify-center bg-gray-100 border-2 border-dashed border-gray-300">
+                                    <div className="h-12 w-12 rounded-[14px] flex items-center justify-center bg-white border-2 border-dashed border-slate-200 shadow-sm">
                                         <PlusCircle className="h-6 w-6" />
                                     </div>
-                                    <span className="text-[11px] font-bold">追加</span>
+                                    <div className="flex flex-col items-center min-h-[1.5rem] justify-center">
+                                        <span className="text-[10px] font-bold">追加</span>
+                                    </div>
                                 </Link>
                             </div>
                         )}
@@ -302,10 +365,55 @@ const Dashboard = () => {
                             </div>
                         ) : (
                             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                                {/* 位置情報リクエストカード */}
+                                {!location && !user.latitude && !user.longitude && !isLocationCardDismissed && (
+                                    <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-[2rem] p-6 shadow-xl shadow-blue-200 text-white overflow-hidden relative group">
+                                        <button 
+                                            onClick={handleDismissLocationCard}
+                                            className="absolute top-4 right-4 z-20 p-2 text-blue-100 hover:text-white hover:bg-white/10 rounded-full transition-all"
+                                            aria-label="閉じる"
+                                        >
+                                            <X className="w-5 h-5" />
+                                        </button>
+                                        <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform duration-500">
+                                            <MapPin className="w-32 h-32" />
+                                        </div>
+                                        <div className="relative z-10">
+                                            <h3 className="text-xl font-black mb-2 flex items-center gap-2">
+                                                <MapPin className="w-6 h-6" />
+                                                位置情報の利用について
+                                            </h3>
+                                            <p className="text-blue-50/90 text-sm font-medium mb-6 leading-relaxed max-w-none">
+                                                お住まいの地域の天気予報や、近くの動物病院を自動で表示するために位置情報を使用します。<br/>
+                                                設定はいつでもプロフィール画面から変更できます。
+                                            </p>
+                                            <div className="flex flex-col sm:flex-row items-center gap-3">
+                                                <button
+                                                    onClick={handleRequestLocation}
+                                                    disabled={isRequestingLocation}
+                                                    className="w-full sm:w-auto px-8 py-3.5 bg-white text-blue-600 rounded-2xl font-black text-sm shadow-lg shadow-blue-700/20 hover:bg-blue-50 transition-all flex items-center justify-center gap-2"
+                                                >
+                                                    {isRequestingLocation ? (
+                                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                                    ) : (
+                                                        <Navigation className="w-4 h-4" />
+                                                    )}
+                                                    現在地を取得して利用する
+                                                </button>
+                                                {locationError && (
+                                                    <span className="text-[11px] font-bold text-blue-100 bg-blue-700/30 px-3 py-2 rounded-xl">
+                                                        {locationError}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                     <div className="flex items-baseline gap-3 min-w-0">
                                         <h2 className="text-2xl font-black bg-gradient-to-r from-slate-800 to-slate-500 bg-clip-text text-transparent tracking-tight leading-tight truncate">{activePet.name}</h2>
-                                        <div className="flex items-center gap-2 min-w-0">
+                                        <div className="flex items-center gap-2 min-w-0 flex-wrap">
                                             {activePet.gender && (
                                                 <span className={`flex-shrink-0 text-[11px] font-black px-2 py-0.5 rounded-lg shadow-sm ${
                                                     activePet.gender === 'male' ? 'bg-blue-50 text-blue-600' : 
@@ -327,26 +435,26 @@ const Dashboard = () => {
                                         <div className="flex items-center justify-end gap-2.5 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0 scrollbar-hide">
                                             <Link 
                                                 href={`/pets/${activePet.id}/edit`}
-                                                className="flex-shrink-0 px-4 py-2 text-xs bg-white/70 backdrop-blur-sm border border-slate-200 rounded-xl shadow-sm hover:bg-white transition-all text-slate-600 font-bold flex items-center"
+                                                className="flex-shrink-0 px-4 py-2 text-xs bg-white/70 backdrop-blur-sm border border-slate-200 rounded-xl shadow-sm hover:bg-white hover:-translate-y-0.5 hover:shadow-md transition-all text-slate-600 font-bold flex items-center"
                                             >
                                                 編集
                                             </Link>
                                             <button 
                                                 onClick={() => setSelectedPetForLog(activePet)}
-                                                className={`flex-shrink-0 px-4 py-2 text-xs bg-white/70 backdrop-blur-sm border border-slate-200 rounded-xl shadow-sm hover:bg-white transition-all flex items-center font-bold ${theme.text}`}
+                                                className={`flex-shrink-0 px-4 py-2 text-xs bg-white/70 backdrop-blur-sm border border-slate-200 rounded-xl shadow-sm hover:bg-white hover:-translate-y-0.5 hover:shadow-md transition-all flex items-center font-bold ${theme.text}`}
                                             >
                                                 <PlusCircle className="h-4 w-4 mr-1.5" />
                                                 記録
                                             </button>
                                             <Link 
                                                 href={`/pets/${activePet.id}/ai-diagnose`}
-                                                className={`flex-shrink-0 px-4 py-2 text-xs text-white rounded-xl shadow-lg shadow-slate-200 transition-all font-bold flex items-center ${theme.bg} ${theme.hover}`}
+                                                className={`flex-shrink-0 px-4 py-2 text-xs text-white rounded-xl shadow-lg shadow-slate-200 hover:-translate-y-0.5 hover:shadow-xl transition-all font-bold flex items-center ${theme.bg} ${theme.hover}`}
                                             >
                                                 AI健康診断
                                             </Link>
                                             <Link 
                                                 href={`/pets/${activePet.id}/history`}
-                                                className="flex-shrink-0 px-4 py-2 text-xs bg-white/70 backdrop-blur-sm border border-slate-200 rounded-xl shadow-sm hover:bg-white transition-all text-slate-600 font-bold flex items-center"
+                                                className="flex-shrink-0 px-4 py-2 text-xs bg-white/70 backdrop-blur-sm border border-slate-200 rounded-xl shadow-sm hover:bg-white hover:-translate-y-0.5 hover:shadow-md transition-all text-slate-600 font-bold flex items-center"
                                             >
                                                 履歴
                                             </Link>
@@ -431,18 +539,24 @@ const Dashboard = () => {
                                                 <Activity className="h-4 w-4 mr-2 text-emerald-500" />
                                                 1週間の散歩 (分)
                                             </h3>
-                                            <div className="text-right flex items-baseline space-x-4">
-                                                <div>
-                                                    <span className="text-xl font-black text-slate-800 tracking-tighter">
-                                                        {getWeeklyExerciseData(activePet.health_logs).reduce((acc, curr) => acc + (curr.exercise_duration || 0), 0)}
-                                                    </span>
-                                                    <span className="text-[10px] font-black text-slate-400 ml-1 uppercase">Total</span>
+                                            <div className="flex items-center gap-6">
+                                                <div className="flex flex-col items-end">
+                                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-0.5">合計</span>
+                                                    <div>
+                                                        <span className="text-xl font-black text-slate-800 tracking-tighter">
+                                                            {getWeeklyExerciseData(activePet.health_logs).reduce((acc, curr) => acc + (curr.exercise_duration || 0), 0)}
+                                                        </span>
+                                                        <span className="text-[10px] font-bold text-slate-500 ml-1">分</span>
+                                                    </div>
                                                 </div>
-                                                <div className="border-l border-slate-100 pl-4">
-                                                    <span className="text-xl font-black text-slate-800 tracking-tighter">
-                                                        {Math.round(getWeeklyExerciseData(activePet.health_logs).reduce((acc, curr) => acc + (curr.exercise_duration || 0), 0) / 7)}
-                                                    </span>
-                                                    <span className="text-[10px] font-black text-slate-400 ml-1 uppercase">Avg</span>
+                                                <div className="flex flex-col items-end border-l border-slate-100 pl-6">
+                                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-0.5">1日平均</span>
+                                                    <div>
+                                                        <span className="text-xl font-black text-slate-800 tracking-tighter">
+                                                            {Math.round(getWeeklyExerciseData(activePet.health_logs).reduce((acc, curr) => acc + (curr.exercise_duration || 0), 0) / 7)}
+                                                        </span>
+                                                        <span className="text-[10px] font-bold text-slate-500 ml-1">分</span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -658,15 +772,16 @@ const Dashboard = () => {
 
                                                 {isWeatherExpanded && (
                                                     <div className="p-6 bg-white/50 border-t border-slate-100/50 animate-in fade-in slide-in-from-top-2 duration-300">
-                                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                                            {dashboardData.weather.forecast.map((f: any, i: number) => {
+                                                        <div className="flex flex-col gap-4">
+                                                            {/* 今日 */}
+                                                            {dashboardData.weather.forecast.slice(0, 1).map((f: any) => {
                                                                 const advice = getWeatherAdvice(f.weather_code, f.temp_max);
                                                                 const date = parseISO(f.date);
                                                                 return (
-                                                                    <div key={f.date} className={`p-4 rounded-2xl border bg-white/70 border-slate-200/50 shadow-sm ${i === 0 ? 'sm:col-span-3' : 'sm:col-span-1'}`}>
+                                                                    <div key={f.date} className="p-4 rounded-2xl border bg-white/70 border-slate-200/50 shadow-sm w-full">
                                                                         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4">
                                                                             <span className="text-xs font-black text-slate-400 uppercase tracking-widest">
-                                                                                {i === 0 ? '今日' : i === 1 ? '明日' : '明後日'}
+                                                                                今日
                                                                                 <span className="ml-2 font-bold tracking-tight text-slate-500">{format(date, 'MM/dd(E)', { locale: ja })}</span>
                                                                             </span>
                                                                             <div className="flex items-center space-x-3">
@@ -686,7 +801,7 @@ const Dashboard = () => {
                                                                         </div>
                                                                         
                                                                         {/* 今日の時間別予報 */}
-                                                                        {i === 0 && f.hourly && (
+                                                                        {f.hourly && (
                                                                             <div className="mt-4 pt-4 border-t border-slate-100">
                                                                                 <div className="flex items-center justify-between mb-3">
                                                                                     <span className="text-[10px] font-black text-slate-500 flex items-center uppercase tracking-widest">
@@ -737,6 +852,39 @@ const Dashboard = () => {
                                                                     </div>
                                                                 );
                                                             })}
+
+                                                            {/* 明日以降 */}
+                                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                                                {dashboardData.weather.forecast.slice(1).map((f: any, i: number) => {
+                                                                    const advice = getWeatherAdvice(f.weather_code, f.temp_max);
+                                                                    const date = parseISO(f.date);
+                                                                    const dayLabel = i === 0 ? '明日' : i === 1 ? '明後日' : '明々後日';
+                                                                    
+                                                                    return (
+                                                                        <div key={f.date} className="p-4 rounded-2xl border bg-white/70 border-slate-200/50 shadow-sm flex flex-col">
+                                                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4">
+                                                                                <span className="text-xs font-black text-slate-400 uppercase tracking-widest">
+                                                                                    {dayLabel}
+                                                                                    <span className="ml-2 font-bold tracking-tight text-slate-500">{format(date, 'MM/dd(E)', { locale: ja })}</span>
+                                                                                </span>
+                                                                                <div className="flex items-center mt-1 sm:mt-0">
+                                                                                    <span className="text-3xl drop-shadow-sm">{getWeatherIcon(f.weather_code)}</span>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div className="flex items-baseline space-x-2 mb-3">
+                                                                                <span className="text-3xl font-black text-slate-800 tracking-tighter">{f.temp_max}°</span>
+                                                                                <span className="text-sm font-bold text-slate-400 tracking-tight">{f.temp_min}°</span>
+                                                                                <div className="ml-auto flex items-center text-xs font-black text-blue-500 bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-100/50">
+                                                                                    {f.precipitation_probability}%
+                                                                                </div>
+                                                                            </div>
+                                                                            <p className={`text-[11px] leading-tight font-black ${advice.color} mt-auto pt-2 border-t border-slate-50`}>
+                                                                                {advice.text}
+                                                                            </p>
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 )}
@@ -831,6 +979,10 @@ const Dashboard = () => {
 
                                                                     {hospital.opening_hours && (
                                                                         <div className="mt-3 pt-3 border-t border-slate-100/50">
+                                                                            <div className="flex items-center text-[10px] font-black text-slate-400 mb-2">
+                                                                                <Clock className="h-3 w-3 mr-1" />
+                                                                                営業時間
+                                                                            </div>
                                                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1">
                                                                                 {hospital.opening_hours.map((text: string, i: number) => {
                                                                                     const days = ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日'];
@@ -851,12 +1003,11 @@ const Dashboard = () => {
                                                             ))}
                                                         </div>
                                                         <div className="mt-8 text-center">
-                                                            <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mb-4">Explore More on Google Maps</p>
                                                             <a 
                                                                 href={`https://www.google.com/maps/search/動物病院/@${dashboardData.weather?.lat},${dashboardData.weather?.lon},14z`}
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
-                                                                className="inline-flex items-center text-xs font-black text-slate-500 hover:text-slate-800 transition-all py-2.5 px-6 rounded-xl border border-transparent hover:border-slate-200 hover:bg-white hover:shadow-sm"
+                                                                className="inline-flex items-center text-xs font-black text-slate-500 hover:text-slate-800 transition-all py-2.5 px-6 rounded-xl border border-transparent hover:border-slate-200 hover:bg-white hover:shadow-md hover:-translate-y-0.5"
                                                             >
                                                                 他の病院を検索する
                                                                 <ExternalLink className="ml-2 h-4 w-4" />

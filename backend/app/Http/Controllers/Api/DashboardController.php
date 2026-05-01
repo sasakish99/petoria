@@ -14,11 +14,15 @@ class DashboardController extends Controller
     {
         $user = $request->user();
 
+        // リクエストに緯度経度が含まれている場合は優先し、なければユーザー情報のものを使用する
+        $lat = $request->query('lat', $user->latitude);
+        $lon = $request->query('lon', $user->longitude);
+
         // 天気情報の取得
-        $weather = $this->getWeather($user);
+        $weather = $this->getWeather($lat, $lon, $user->id);
 
         // 近くの動物病院の取得
-        $hospitals = $this->getNearbyHospitals($user);
+        $hospitals = $this->getNearbyHospitals($lat, $lon);
 
         $pets = $user->pets()
             ->with(['breed', 'healthLogs' => function($query) {
@@ -135,50 +139,42 @@ class DashboardController extends Controller
         ]);
     }
 
-    private function getWeather($user)
+    private function getWeather($lat, $lon, $userId)
     {
-        $address = $user->address;
-        if (!$address) {
+        if (!$lat || !$lon) {
             return null;
         }
 
         $date = now()->format('Y-m-d');
-        return Cache::remember('weather_' . $user->id . '_' . $date . '_' . md5($address), 3600, function () use ($address) {
+        return Cache::remember('weather_v2_' . $userId . '_' . $date . '_' . md5($lat . $lon), 3600, function () use ($lat, $lon) {
             try {
-                // 1. ジオコーディング (OpenStreetMap Nominatim API)
-                // Nominatimは詳細な住所だとヒットしないことがあるため、都道府県+市区町村で検索する
-                $searchAddress = $address;
-                if (preg_match('/^(.{2,3}[都道府県])([^市区町村]+[市区町村])/u', $address, $matches)) {
-                    $searchAddress = $matches[1] . $matches[2];
-                }
-
+                // 1. 逆ジオコーディング (OpenStreetMap Nominatim API) で地名を取得
                 $geoResponse = Http::withHeaders([
                     'User-Agent' => 'PetoriaApp/1.0'
-                ])->get('https://nominatim.openstreetmap.org/search', [
-                    'q' => $searchAddress,
+                ])->get('https://nominatim.openstreetmap.org/reverse', [
+                    'lat' => $lat,
+                    'lon' => $lon,
                     'format' => 'json',
-                    'limit' => 1,
                     'accept-language' => 'ja'
                 ]);
 
-                if (!$geoResponse->successful() || empty($geoResponse->json())) {
-                    return null;
+                $locationName = '現在地';
+                if ($geoResponse->successful()) {
+                    $location = $geoResponse->json();
+                    // 市区町村名などを取得
+                    $address = $location['address'] ?? [];
+                    $locationName = $address['city'] ?? $address['town'] ?? $address['village'] ?? $address['suburb'] ?? '現在地';
                 }
 
-                $location = $geoResponse->json()[0];
-                $lat = $location['lat'];
-                $lon = $location['lon'];
-                $locationName = $location['name'];
-
                 // 2. 天気予報の取得 (Open-Meteo Weather Forecast API)
-                // 3日分 (今日、明日、明後日) + 今日の1時間ごとの予報
+                // 4日分 (今日〜明々後日) + 今日の1時間ごとの予報
                 $weatherResponse = Http::get('https://api.open-meteo.com/v1/forecast', [
                     'latitude' => $lat,
                     'longitude' => $lon,
                     'daily' => 'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max',
                     'hourly' => 'weather_code,temperature_2m,precipitation_probability',
                     'timezone' => 'Asia/Tokyo',
-                    'forecast_days' => 3,
+                    'forecast_days' => 4,
                 ]);
 
                 if (!$weatherResponse->successful()) {
@@ -190,7 +186,7 @@ class DashboardController extends Controller
                 $hourly = $weatherData['hourly'];
                 $forecast = [];
 
-                for ($i = 0; $i < 3; $i++) {
+                for ($i = 0; $i < 4; $i++) {
                     $dayForecast = [
                         'date' => $daily['time'][$i],
                         'weather_code' => $daily['weather_code'][$i],
@@ -228,14 +224,13 @@ class DashboardController extends Controller
         });
     }
 
-    private function getNearbyHospitals($user)
+    private function getNearbyHospitals($lat, $lon)
     {
-        $address = $user->address;
-        if (!$address) {
+        if (!$lat || !$lon) {
             return null;
         }
 
-        $cacheKey = 'hospitals_' . md5($address);
+        $cacheKey = 'hospitals_' . md5($lat . $lon);
 
         try {
             $apiKey = config('services.google.maps_api_key');
@@ -245,34 +240,11 @@ class DashboardController extends Controller
                 return null;
             }
 
-            // 1. 住所から緯度経度を取得 (Google Geocoding API)
-            // 住所自体は不変なので、ジオコーディング結果は長くキャッシュしても良い
-            $location = Cache::remember('geo_' . md5($address), 86400 * 30, function () use ($address, $apiKey) {
-                $geoResponse = Http::get('https://maps.googleapis.com/maps/api/geocode/json', [
-                    'address' => $address,
-                    'key' => $apiKey,
-                    'language' => 'ja'
-                ]);
-
-                if (!$geoResponse->successful() || empty($geoResponse->json()['results'])) {
-                    return null;
-                }
-
-                return $geoResponse->json()['results'][0]['geometry']['location'];
-            });
-
-            if (!$location) {
-                return null;
-            }
-
-            $lat = $location['lat'];
-            $lng = $location['lng'];
-
-            // 2. 近くの動物病院を検索 (Google Places API - Nearby Search)
+            // 近くの動物病院を検索 (Google Places API - Nearby Search)
             // 営業状態が含まれるため、キャッシュ時間を短くする (例: 10分)
-            return Cache::remember($cacheKey, 600, function () use ($lat, $lng, $apiKey) {
+            return Cache::remember($cacheKey, 600, function () use ($lat, $lon, $apiKey) {
                 $placesResponse = Http::get('https://maps.googleapis.com/maps/api/place/nearbysearch/json', [
-                    'location' => "{$lat},{$lng}",
+                    'location' => "{$lat},{$lon}",
                     'radius' => 10000,
                     'type' => 'veterinary_care',
                     'key' => $apiKey,
@@ -292,6 +264,7 @@ class DashboardController extends Controller
                     $itemLng = $item['geometry']['location']['lng'];
                     $placeId = $item['place_id'] ?? null;
                     $openingHours = null;
+                    $phoneNumber = null;
 
                     // 詳細情報を取得して営業時間を取得
                     if ($placeId) {
@@ -308,11 +281,6 @@ class DashboardController extends Controller
                         }
                     }
 
-                    // 営業時間のデータが取れない病院は除外する
-                    if (empty($openingHours)) {
-                        continue;
-                    }
-
                     $hospitals[] = [
                         'name' => $item['name'],
                         'display_name' => $item['vicinity'] ?? $item['name'],
@@ -324,7 +292,7 @@ class DashboardController extends Controller
                         'rating' => $item['rating'] ?? null,
                         'user_ratings_total' => $item['user_ratings_total'] ?? null,
                         // 距離の簡易計算 (km)
-                        'distance' => $this->calculateDistance($lat, $lng, $itemLat, $itemLng)
+                        'distance' => $this->calculateDistance($lat, $lon, $itemLat, $itemLng)
                     ];
                 }
 

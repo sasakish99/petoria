@@ -233,16 +233,8 @@ class PetController extends Controller
             // 近くの病院情報を取得
             $nearbyHospitals = [];
             $user = $request->user();
-            if ($user->address) {
-                // 本来はGoogle Places API等を使用するが、ここでは住所に基づく検索リンクを生成
-                $searchQuery = urlencode($user->address . ' 動物病院');
-                $nearbyHospitals = [
-                    [
-                        'name' => '周辺の動物病院を確認する',
-                        'url' => "https://www.google.com/maps/search/?api=1&query={$searchQuery}",
-                        'is_link' => true
-                    ]
-                ];
+            if ($user->latitude && $user->longitude) {
+                $nearbyHospitals = $this->getNearbyHospitals($user->latitude, $user->longitude);
             }
 
             return response()->json([
@@ -262,6 +254,111 @@ class PetController extends Controller
                 'diagnosis' => $diagnosis
             ], 500);
         }
+    }
+
+    private function getNearbyHospitals($lat, $lon)
+    {
+        try {
+            $apiKey = config('services.google.maps_api_key');
+            if (!$apiKey) return [];
+
+            $placesResponse = Http::get('https://maps.googleapis.com/maps/api/place/nearbysearch/json', [
+                'location' => "{$lat},{$lon}",
+                'radius' => 10000,
+                'type' => 'veterinary_care',
+                'key' => $apiKey,
+                'language' => 'ja'
+            ]);
+
+            if (!$placesResponse->successful()) return [];
+
+            $results = $placesResponse->json()['results'] ?? [];
+            $hospitals = [];
+
+            // 件数を10件に絞る
+            $limitedResults = array_slice($results, 0, 10);
+
+            foreach ($limitedResults as $item) {
+                $itemLat = $item['geometry']['location']['lat'];
+                $itemLng = $item['geometry']['location']['lng'];
+                $placeId = $item['place_id'] ?? null;
+                $openingHours = null;
+                $phoneNumber = null;
+
+                if ($placeId) {
+                    $detailResponse = Http::get('https://maps.googleapis.com/maps/api/place/details/json', [
+                        'place_id' => $placeId,
+                        'fields' => 'opening_hours,formatted_phone_number',
+                        'key' => $apiKey,
+                        'language' => 'ja'
+                    ]);
+                    if ($detailResponse->successful()) {
+                        $result = $detailResponse->json()['result'] ?? [];
+                        $openingHours = $result['opening_hours']['weekday_text'] ?? null;
+                        $phoneNumber = $result['formatted_phone_number'] ?? null;
+                    }
+                }
+
+                $hospitals[] = [
+                    'name' => $item['name'],
+                    'display_name' => $item['vicinity'] ?? $item['name'],
+                    'lat' => $itemLat,
+                    'lon' => $itemLng,
+                    'open_now' => $this->isOpenNow($item['opening_hours']['open_now'] ?? null, $openingHours),
+                    'opening_hours' => $openingHours,
+                    'phone_number' => $phoneNumber,
+                    'rating' => $item['rating'] ?? null,
+                    'user_ratings_total' => $item['user_ratings_total'] ?? null,
+                    'distance' => $this->calculateDistance($lat, $lon, $itemLat, $itemLng)
+                ];
+            }
+
+            usort($hospitals, function ($a, $b) {
+                return $a['distance'] <=> $b['distance'];
+            });
+
+            return $hospitals;
+        } catch (\Exception $e) {
+            \Log::error('Hospital Search Error (PetController): ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    private function isOpenNow($googleOpenNow, $weekdayText)
+    {
+        if ($googleOpenNow === true) return true;
+        if (!$weekdayText || !is_array($weekdayText)) return $googleOpenNow;
+
+        $now = now();
+        $days = ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日'];
+        $todayName = $days[$now->dayOfWeek];
+
+        foreach ($weekdayText as $line) {
+            if (str_starts_with($line, $todayName)) {
+                if (str_contains($line, '定休日') || str_contains($line, '休み')) return false;
+                $timePart = str_replace($todayName . ': ', '', $line);
+                $periods = explode(', ', $timePart);
+                foreach ($periods as $period) {
+                    if (preg_match('/(\d{1,2})[時:](\d{2})分?～(\d{1,2})[時:](\d{2})分?/u', $period, $matches)) {
+                        $startTime = $now->copy()->setTime((int)$matches[1], (int)$matches[2]);
+                        $endTime = $now->copy()->setTime((int)$matches[3], (int)$matches[4]);
+                        if ($now->between($startTime, $endTime)) return true;
+                    }
+                }
+                break;
+            }
+        }
+        return $googleOpenNow;
+    }
+
+    private function calculateDistance($lat1, $lon1, $lat2, $lon2)
+    {
+        $theta = $lon1 - $lon2;
+        $dist = sin(deg2rad($lat1)) * sin(deg2rad($lat2)) +  cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * cos(deg2rad($theta));
+        $dist = acos($dist);
+        $dist = rad2deg($dist);
+        $miles = $dist * 60 * 1.1515;
+        return round($miles * 1.609344, 2);
     }
 
     public function destroyAiDiagnoses(Request $request, Pet $pet)

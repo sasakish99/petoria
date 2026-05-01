@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { X, Save, Utensils, Activity, Trash2, Clipboard, Scale } from 'lucide-react';
+import { X, Save, Utensils, Activity, Trash2, Clipboard, Scale, Calendar, Loader2 } from 'lucide-react';
 import axios from '@/lib/axios';
 import { format } from 'date-fns';
 
@@ -109,7 +109,7 @@ const HealthLogModal = ({ pet, editingLog, onClose, onSuccess }: HealthLogModalP
                                     placeholder="50"
                                     value={formData.meal_amount}
                                     onChange={e => setFormData({ ...formData, meal_amount: e.target.value })}
-                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:border-slate-400 focus:ring focus:ring-slate-200 focus:ring-opacity-50 outline-none transition-all font-bold text-slate-700"
+                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:border-slate-400 focus:ring focus:ring-slate-200/50 outline-none transition-all font-bold text-slate-700"
                                 />
                             </div>
                             <div>
@@ -123,7 +123,7 @@ const HealthLogModal = ({ pet, editingLog, onClose, onSuccess }: HealthLogModalP
                                     placeholder="5.5"
                                     value={formData.weight}
                                     onChange={e => setFormData({ ...formData, weight: e.target.value })}
-                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:border-slate-400 focus:ring focus:ring-slate-200 focus:ring-opacity-50 outline-none transition-all font-bold text-slate-700"
+                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:border-slate-400 focus:ring focus:ring-slate-200/50 outline-none transition-all font-bold text-slate-700"
                                 />
                             </div>
                         </div>
@@ -183,7 +183,7 @@ const HealthLogModal = ({ pet, editingLog, onClose, onSuccess }: HealthLogModalP
                                 placeholder="気になることがあれば入力してください"
                                 value={formData.memo}
                                 onChange={e => setFormData({ ...formData, memo: e.target.value })}
-                                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:border-slate-400 focus:ring focus:ring-slate-200 focus:ring-opacity-50 outline-none transition-all font-medium text-slate-700 min-h-[100px] resize-none"
+                                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:border-slate-400 focus:ring focus:ring-slate-200/50 outline-none transition-all font-medium text-slate-700 min-h-[100px] resize-none"
                             />
                         </div>
                     </div>

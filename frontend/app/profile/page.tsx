@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Save, MapPin, User, Loader2, Search } from 'lucide-react';
+import { ArrowLeft, Save, MapPin, User, Loader2, Search, Trash2 } from 'lucide-react';
 
 import axios from '@/lib/axios';
 
@@ -16,8 +16,8 @@ export default function ProfilePage() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    zipcode: '',
-    address: '',
+    latitude: null as number | null,
+    longitude: null as number | null,
   });
 
   useEffect(() => {
@@ -31,8 +31,8 @@ export default function ProfilePage() {
       setFormData({
         name: data.name || '',
         email: data.email || '',
-        zipcode: data.zipcode || '',
-        address: data.address || '',
+        latitude: data.latitude ? Number(data.latitude) : null,
+        longitude: data.longitude ? Number(data.longitude) : null,
       });
     } catch (error) {
       console.error('Failed to fetch user data:', error);
@@ -41,31 +41,46 @@ export default function ProfilePage() {
     }
   };
 
-  const handleZipSearch = async () => {
-    if (!formData.zipcode || formData.zipcode.length < 7) {
-      setMessage({ type: 'error', text: '正しい郵便番号を入力してください（ハイフンなし7桁）。' });
+  const handleGetLocation = () => {
+    if (!navigator.geolocation) {
+      setMessage({ type: 'error', text: 'お使いのブラウザは位置情報に対応していません。' });
       return;
     }
 
-    setSearchingZip(true);
+    setSearchingZip(true); // 読み込み状態として再利用
     setMessage({ type: '', text: '' });
 
-    try {
-      const response = await fetch(`https://zipcloud.ibsnet.co.jp/api/search?zipcode=${formData.zipcode}`);
-      const data = await response.json();
-
-      if (data.results && data.results[0]) {
-        const result = data.results[0];
-        const fullAddress = `${result.address1}${result.address2}${result.address3}`;
-        setFormData({ ...formData, address: fullAddress });
-      } else {
-        setMessage({ type: 'error', text: '住所が見つかりませんでした。' });
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const newLat = position.coords.latitude;
+        const newLon = position.coords.longitude;
+        setFormData({
+          ...formData,
+          latitude: newLat,
+          longitude: newLon,
+        });
+        setMessage({ type: 'success', text: '位置情報を取得しました。保存ボタンを押して確定してください。' });
+        setSearchingZip(false);
+      },
+      (error) => {
+        console.error('Geolocation error:', error);
+        let errorMsg = '位置情報の取得に失敗しました。';
+        if (error.code === error.PERMISSION_DENIED) {
+          errorMsg = '位置情報の利用が許可されていません。設定から許可してください。';
+        }
+        setMessage({ type: 'error', text: errorMsg });
+        setSearchingZip(false);
       }
-    } catch (error) {
-      setMessage({ type: 'error', text: '郵便番号検索に失敗しました。' });
-    } finally {
-      setSearchingZip(false);
-    }
+    );
+  };
+
+  const handleClearLocation = () => {
+    setFormData({
+      ...formData,
+      latitude: null,
+      longitude: null,
+    });
+    setMessage({ type: 'success', text: '位置情報をクリアしました。保存ボタンを押して確定してください。' });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -76,8 +91,8 @@ export default function ProfilePage() {
     try {
       await axios.put('/api/user', {
         name: formData.name,
-        zipcode: formData.zipcode,
-        address: formData.address,
+        latitude: formData.latitude,
+        longitude: formData.longitude,
       });
       setMessage({ type: 'success', text: 'プロフィールを更新しました。' });
     } catch (error) {
@@ -107,21 +122,25 @@ export default function ProfilePage() {
           ダッシュボードに戻る
         </Link>
 
-        <div className="bg-white/70 backdrop-blur-lg rounded-3xl shadow-xl shadow-slate-200/50 border border-white overflow-hidden">
+        <div 
+          className="bg-white/70 backdrop-blur-lg rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-white overflow-hidden"
+        >
           <div className="p-8 border-b border-slate-100/50 bg-white/50">
             <h1 className="text-2xl font-black bg-gradient-to-r from-slate-800 to-slate-500 bg-clip-text text-transparent tracking-tight">
               飼い主情報の設定
             </h1>
             <p className="text-sm text-slate-500 font-medium mt-1">
-              住所を登録すると、AI診断時に近くの動物病院をご案内できるようになります。
+              位置情報を設定すると、お住まいの地域の天気や近くの動物病院をご案内できるようになります。
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="p-8 space-y-8">
             {message.text && (
-              <div className={`p-4 rounded-2xl text-sm font-medium animate-in fade-in slide-in-from-top-2 duration-300 ${
-                message.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-700 border border-rose-100'
-              }`}>
+              <div 
+                className={`p-4 rounded-2xl text-sm font-medium overflow-hidden ${
+                  message.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-700 border border-rose-100'
+                }`}
+              >
                 {message.text}
               </div>
             )}
@@ -161,44 +180,50 @@ export default function ProfilePage() {
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2 ml-1 flex items-center">
                   <MapPin className="w-4 h-4 mr-2 text-slate-400" />
-                  郵便番号（自動入力）
+                  位置情報
                 </label>
-                <div className="flex space-x-3">
-                  <input
-                    type="text"
-                    value={formData.zipcode}
-                    onChange={(e) => setFormData({ ...formData, zipcode: e.target.value.replace(/[^0-9]/g, '') })}
-                    className="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-slate-400 focus:ring focus:ring-slate-200/50 transition-all text-slate-900"
-                    placeholder="7桁の数字（ハイフンなし）"
-                    maxLength={7}
-                  />
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="text-sm font-medium text-slate-500">
+                      {formData.latitude && formData.longitude ? (
+                        <div className="flex flex-col">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-slate-900 font-bold">
+                              現在設定されている位置情報: 緯度 {Number(formData.latitude).toFixed(4)}, 経度 {Number(formData.longitude).toFixed(4)}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={handleClearLocation}
+                              className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
+                              title="位置情報を削除"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-rose-500 font-bold">位置情報が設定されていません</span>
+                      )}
+                    </div>
+                  </div>
                   <button
                     type="button"
-                    onClick={handleZipSearch}
-                    disabled={searchingZip || formData.zipcode.length < 7}
-                    className="px-6 py-3 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200 transition-all flex items-center disabled:opacity-50 shadow-sm border border-slate-200/50"
+                    onClick={handleGetLocation}
+                    disabled={searchingZip}
+                    className="w-full px-6 py-4 bg-white text-slate-700 rounded-xl font-bold hover:bg-slate-50 transition-all flex items-center justify-center disabled:opacity-50 shadow-sm border border-slate-200"
                   >
-                    {searchingZip ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4 mr-2" />}
-                    検索
+                    {searchingZip ? (
+                      <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                    ) : (
+                      <Search className="w-5 h-5 mr-2" />
+                    )}
+                    GPSで現在地を取得する
                   </button>
+                  <p className="text-[11px] text-slate-400 mt-4 leading-relaxed text-center">
+                    ※ブラウザの位置情報利用の許可が必要です。<br />
+                    ※取得した位置情報は、天気情報や近くの病院検索にのみ使用されます。
+                  </p>
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2 ml-1 flex items-center">
-                  <MapPin className="w-4 h-4 mr-2 text-slate-400" />
-                  住所
-                </label>
-                <input
-                  type="text"
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-slate-400 focus:ring focus:ring-slate-200/50 transition-all text-slate-900"
-                  placeholder="例: 東京都渋谷区代々木"
-                />
-                <p className="text-[12px] text-slate-400 mt-2 ml-1 leading-relaxed">
-                  市区町村以降の番地や建物名がある場合は、手動で追記してください。
-                </p>
               </div>
             </div>
 
@@ -206,7 +231,7 @@ export default function ProfilePage() {
               <button
                 type="submit"
                 disabled={saving}
-                className="w-full flex items-center justify-center px-6 py-4 bg-slate-800 text-white rounded-xl font-bold hover:bg-slate-700 active:bg-slate-900 focus:outline-none focus:ring-4 focus:ring-slate-200 transition-all duration-200 shadow-lg shadow-slate-200 disabled:opacity-50"
+                className="w-full flex items-center justify-center px-6 py-4 bg-slate-800 text-white rounded-2xl font-bold hover:bg-slate-700 active:bg-slate-900 focus:outline-none focus:ring-4 focus:ring-slate-200 transition-all duration-200 shadow-lg shadow-slate-200 disabled:opacity-50"
               >
                 {saving ? (
                   <Loader2 className="w-5 h-5 animate-spin" />

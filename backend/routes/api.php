@@ -17,12 +17,28 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::put('/user', function (Request $request) {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'zipcode' => 'nullable|string|size:7',
-            'address' => 'nullable|string|max:255',
+            'name' => 'nullable|string|max:255',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
         ]);
-        $request->user()->update($validated);
-        return response()->json($request->user());
+
+        $user = $request->user();
+
+        if (array_key_exists('name', $validated) && $validated['name'] !== null) {
+            $user->name = $validated['name'];
+        }
+
+        if (array_key_exists('latitude', $validated)) {
+            $user->latitude = $validated['latitude'];
+        }
+
+        if (array_key_exists('longitude', $validated)) {
+            $user->longitude = $validated['longitude'];
+        }
+
+        $user->save();
+
+        return response()->json($user);
     });
 
     Route::get('/dashboard', [DashboardController::class, 'index']);

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/auth';
 import axios from '@/lib/axios';
 import { useRouter, useParams } from 'next/navigation';
-import { Camera, Upload, ChevronLeft, Loader2, AlertCircle, MapPin, ExternalLink } from 'lucide-react';
+import { Camera, Upload, ChevronLeft, Loader2, AlertCircle, MapPin, ExternalLink, X, Activity, Star, Navigation, Phone, ChevronDown, Clock } from 'lucide-react';
 import Link from 'next/link';
 
 const AiDiagnose = () => {
@@ -20,6 +20,7 @@ const AiDiagnose = () => {
     const [targetPart, setTargetPart] = useState('overall');
     const [result, setResult] = useState<any>(null);
     const [nearbyHospitals, setNearbyHospitals] = useState<any[]>([]);
+    const [isHospitalsExpanded, setIsHospitalsExpanded] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isDragging, setIsDragging] = useState(false);
 
@@ -191,7 +192,7 @@ const AiDiagnose = () => {
                                                 <p className={`mb-2 text-sm font-black transition-colors ${isDragging ? 'text-slate-800' : 'text-slate-600'}`}>
                                                     {isDragging ? 'ここにドロップ' : '写真を撮影・選択'}
                                                 </p>
-                                                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">or drag & drop</p>
+                                                <p className="text-[10px] text-slate-400 font-bold tracking-widest uppercase">またはドラッグ＆ドロップ</p>
                                             </div>
                                             <input type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
                                         </label>
@@ -240,50 +241,135 @@ const AiDiagnose = () => {
 
                                 {/* 近隣の病院情報 */}
                                 {nearbyHospitals.length > 0 ? (
-                                    <div className="mt-8 pt-8 border-t border-gray-100">
-                                        <h4 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
-                                            <MapPin className="h-5 w-5 mr-2 text-rose-500" />
-                                            近隣の動物病院
-                                        </h4>
-                                        <div className="space-y-3">
-                                            {nearbyHospitals.map((hospital, idx) => (
-                                                <a 
-                                                    key={idx}
-                                                    href={hospital.url}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="flex items-center justify-between p-4 bg-rose-50 border border-rose-100 rounded-xl hover:bg-rose-100 transition-colors group"
-                                                >
-                                                    <span className="font-medium text-rose-900">{hospital.name}</span>
-                                                    <ExternalLink className="h-4 w-4 text-rose-400 group-hover:text-rose-600 transition-colors" />
-                                                </a>
-                                            ))}
-                                        </div>
-                                        <p className="mt-3 text-[12px] text-gray-400 ml-1">
-                                            ※ご登録の住所（{user.address}）の周辺にある動物病院を検索しています。
+                                    <div className="mt-8 pt-8 border-t border-slate-100">
+                                        <details 
+                                            className="group"
+                                            open={isHospitalsExpanded}
+                                            onToggle={(e) => setIsHospitalsExpanded((e.target as HTMLDetailsElement).open)}
+                                        >
+                                            <summary className="list-none flex items-center justify-between mb-6 cursor-pointer hover:bg-slate-50 p-2 rounded-xl transition-colors">
+                                                <div className="flex items-center">
+                                                    <div className="h-8 w-8 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center mr-3 shadow-sm">
+                                                        <MapPin className="h-4 w-4" />
+                                                    </div>
+                                                    <h4 className="text-lg font-black text-slate-800">
+                                                        近隣の動物病院
+                                                    </h4>
+                                                    <span className="ml-3 text-[10px] font-black bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 text-slate-500 uppercase tracking-widest">
+                                                        {nearbyHospitals.length}件表示中
+                                                    </span>
+                                                </div>
+                                                <div className={`p-2 rounded-lg bg-slate-100 text-slate-400 transition-transform ${isHospitalsExpanded ? 'rotate-180 text-rose-500 bg-rose-50' : ''}`}>
+                                                    <ChevronDown className="h-4 w-4" />
+                                                </div>
+                                            </summary>
+                                            
+                                            <div className="grid grid-cols-1 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                                                {nearbyHospitals.map((hospital, idx) => (
+                                                    <a 
+                                                        key={idx}
+                                                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(hospital.name)}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="p-4 bg-white rounded-2xl border border-slate-200 hover:border-rose-200 hover:bg-rose-50/30 transition-all flex flex-col group shadow-sm"
+                                                    >
+                                                        <div className="flex items-start justify-between mb-3">
+                                                            <div className="flex flex-col min-w-0 pr-2">
+                                                                <span className="text-sm font-black text-slate-800 line-clamp-1 group-hover:text-rose-700 transition-colors tracking-tight">
+                                                                    {hospital.name}
+                                                                </span>
+                                                                <div className="flex items-center gap-3 mt-1.5">
+                                                                    {hospital.rating ? (
+                                                                        <div className="flex items-center bg-white px-2 py-0.5 rounded-lg border border-amber-100 shadow-sm">
+                                                                            <Star 
+                                                                                className="h-2.5 w-2.5 text-amber-500 fill-amber-500 mr-1" 
+                                                                            />
+                                                                            <span className="text-[10px] font-black text-amber-700">{hospital.rating}</span>
+                                                                            {hospital.user_ratings_total && (
+                                                                                <span className="text-[9px] text-slate-400 ml-1 font-bold">({hospital.user_ratings_total})</span>
+                                                                            )}
+                                                                        </div>
+                                                                    ) : (
+                                                                        <span className="text-[9px] text-slate-400 font-bold italic">評価なし</span>
+                                                                    )}
+                                                                    <div className="flex items-center text-[10px] font-black text-rose-600 bg-rose-50 px-2 py-0.5 rounded-lg border border-rose-100/50">
+                                                                        <Navigation className="h-2.5 w-2.5 mr-1" />
+                                                                        {hospital.distance}km
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            {hospital.open_now !== null && (
+                                                                <div className={`shrink-0 text-[10px] px-2.5 py-1 rounded-xl font-black shadow-sm ${hospital.open_now ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-500'}`}>
+                                                                    {hospital.open_now ? '営業中' : '時間外'}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        
+                                                        <div className="text-[11px] text-slate-500 font-bold flex items-center justify-between mt-auto pt-3 border-t border-slate-50">
+                                                            <span className="truncate mr-4 flex items-center text-slate-400">
+                                                                <MapPin className="h-3 w-3 mr-1.5" />
+                                                                {hospital.display_name}
+                                                            </span>
+                                                            {hospital.phone_number && (
+                                                                <span className="shrink-0 flex items-center text-blue-600 font-black">
+                                                                    <Phone className="h-3 w-3 mr-1" />
+                                                                    {hospital.phone_number}
+                                                                </span>
+                                                            )}
+                                                        </div>
+
+                                                        {hospital.opening_hours && (
+                                                            <div className="mt-3 pt-3 border-t border-slate-100/50">
+                                                                <div className="flex items-center text-[10px] font-black text-slate-400 mb-2">
+                                                                    <Clock className="h-3 w-3 mr-1" />
+                                                                    営業時間
+                                                                </div>
+                                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1">
+                                                                    {hospital.opening_hours.map((text: string, i: number) => {
+                                                                        const days = ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日'];
+                                                                        const todayName = days[new Date().getDay()];
+                                                                        const isToday = text.startsWith(todayName);
+                                                                        
+                                                                        return (
+                                                                            <div key={i} className={`text-[10px] leading-tight flex justify-between ${isToday ? 'font-black text-slate-800' : 'font-medium text-slate-400'}`}>
+                                                                                <span className="shrink-0 mr-2">{text.split(': ')[0] || text}</span>
+                                                                                <span className="truncate">{text.split(': ')[1] || ''}</span>
+                                                                            </div>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </a>
+                                                ))}
+                                            </div>
+                                        </details>
+                                        <p className="mt-4 text-[10px] text-slate-400 font-bold flex items-center ml-1">
+                                            <AlertCircle className="h-3 w-3 mr-1.5" />
+                                            ※現在地の周辺10km以内にある動物病院を最大10件表示しています。
                                         </p>
                                     </div>
                                 ) : (
-                                    <div className="mt-8 pt-8 border-t border-gray-100">
-                                        <div className="bg-amber-50 border border-amber-100 p-4 rounded-xl flex items-start">
-                                            <MapPin className="h-5 w-5 mr-3 mt-0.5 text-amber-500 flex-shrink-0" />
-                                            <div>
-                                                <p className="text-sm font-medium text-amber-900">
-                                                    住所を登録すると周辺の病院が表示されます
-                                                </p>
-                                                <p className="text-xs text-amber-700 mt-1">
-                                                    プロフィール画面から住所を設定すると、診断後に近隣の動物病院を自動でご案内できるようになります。
-                                                </p>
-                                                <Link 
-                                                    href="/profile"
-                                                    className="inline-block mt-2 text-xs font-bold text-amber-800 hover:underline"
-                                                >
-                                                    住所を登録しに行く
-                                                </Link>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
+                                                <div className="mt-8 pt-8 border-t border-gray-100">
+                                                    <div className="bg-amber-50 border border-amber-100 p-4 rounded-xl flex items-start">
+                                                        <MapPin className="h-5 w-5 mr-3 mt-0.5 text-amber-500 flex-shrink-0" />
+                                                        <div>
+                                                            <p className="text-sm font-medium text-amber-900">
+                                                                位置情報を登録すると周辺ের病院が表示されます
+                                                            </p>
+                                                            <p className="text-xs text-amber-700 mt-1">
+                                                                プロフィール画面から位置情報を設定すると、診断後に近隣の動物病院を自動でご案内できるようになります。
+                                                            </p>
+                                                            <Link 
+                                                                href="/profile"
+                                                                className="inline-block mt-2 text-xs font-bold text-amber-800 hover:underline"
+                                                            >
+                                                                位置情報を登録しに行く
+                                                            </Link>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
 
                                 <div className="mt-8 flex flex-col sm:flex-row gap-4">
                                     <button 
@@ -307,17 +393,5 @@ const AiDiagnose = () => {
         </div>
     );
 };
-
-const PlusCircle = ({ className }: { className?: string }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
-    </svg>
-);
-
-const Activity = ({ className }: { className?: string }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-        <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-    </svg>
-);
 
 export default AiDiagnose;
