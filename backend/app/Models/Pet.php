@@ -53,16 +53,6 @@ class Pet extends Model
         return $this->hasMany(MedicalEvent::class);
     }
 
-    public function medicalReceipts()
-    {
-        return $this->hasMany(MedicalReceipt::class);
-    }
-
-    public function healthCheckupResults()
-    {
-        return $this->hasMany(HealthCheckupResult::class);
-    }
-
     public function aiDiagnoses()
     {
         return $this->hasMany(AiDiagnosis::class);

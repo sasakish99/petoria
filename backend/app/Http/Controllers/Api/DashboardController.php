@@ -37,10 +37,6 @@ class DashboardController extends Controller
                   ->orderBy('event_date', 'asc');
             }, 'aiDiagnoses' => function($query) {
                 $query->where('status', 'completed')->orderBy('created_at', 'desc');
-            }, 'medicalReceipts' => function($query) {
-                $query->orderBy('receipt_date', 'desc');
-            }, 'healthCheckupResults' => function($query) {
-                $query->orderBy('checkup_date', 'desc');
             }])
             ->get();
 

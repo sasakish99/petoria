@@ -68,7 +68,7 @@ class PetController extends Controller
         if ($pet->user_id !== auth()->id()) {
             abort(403);
         }
-        return $pet->load(['weightLogs', 'healthLogs', 'medicalEvents', 'aiDiagnoses', 'medicalReceipts', 'healthCheckupResults']);
+        return $pet->load(['weightLogs', 'healthLogs', 'medicalEvents', 'aiDiagnoses']);
     }
 
     public function update(Request $request, Pet $pet)

@@ -47,20 +47,16 @@ export default function PetHistoryPage({ params }: { params: Promise<{ id: strin
     const router = useRouter();
     const { user } = useAuth({ middleware: 'auth' });
 
-    const [activeTab, setActiveTab] = useState<'ai' | 'health' | 'exercise' | 'vaccine' | 'receipt' | 'checkup'>('ai');
+    const [activeTab, setActiveTab] = useState<'ai' | 'health' | 'exercise' | 'vaccine'>('ai');
     const [pet, setPet] = useState<any>(null);
     const [aiHistory, setAiHistory] = useState<any[]>([]);
     const [healthLogs, setHealthLogs] = useState<any[]>([]);
     const [exerciseLogs, setExerciseLogs] = useState<any[]>([]);
     const [vaccineHistory, setVaccineHistory] = useState<any[]>([]);
-    const [receiptHistory, setReceiptHistory] = useState<any[]>([]);
-    const [checkupHistory, setCheckupHistory] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     // 詳細表示用状態
     const [selectedDiagnosis, setSelectedDiagnosis] = useState<any>(null);
-    const [selectedReceipt, setSelectedReceipt] = useState<any>(null);
-    const [selectedCheckup, setSelectedCheckup] = useState<any>(null);
     const [selectedVaccine, setSelectedVaccine] = useState<any>(null);
 
     const [isEditMode, setIsEditMode] = useState(false);
@@ -97,9 +93,6 @@ export default function PetHistoryPage({ params }: { params: Promise<{ id: strin
                 new Date(b.event_date).getTime() - new Date(a.event_date).getTime()
             ) : [];
             setVaccineHistory(vaccines);
-
-            setReceiptHistory(petRes.data.medical_receipts || []);
-            setCheckupHistory(petRes.data.health_checkup_results || []);
         } catch (err) {
             console.error(err);
         } finally {
@@ -137,8 +130,6 @@ export default function PetHistoryPage({ params }: { params: Promise<{ id: strin
         else if (activeTab === 'health') currentHistory = healthLogs;
         else if (activeTab === 'exercise') currentHistory = exerciseLogs;
         else if (activeTab === 'vaccine') currentHistory = vaccineHistory;
-        else if (activeTab === 'receipt') currentHistory = receiptHistory;
-        else if (activeTab === 'checkup') currentHistory = checkupHistory;
 
         if (selectedIds.length === currentHistory.length) {
             setSelectedIds([]);
@@ -159,8 +150,6 @@ export default function PetHistoryPage({ params }: { params: Promise<{ id: strin
             else if (activeTab === 'health') endpoint = `/api/pets/${petId}/health-logs/bulk`;
             else if (activeTab === 'exercise') endpoint = `/api/pets/${petId}/exercise-logs/bulk`;
             else if (activeTab === 'vaccine') endpoint = `/api/pets/${petId}/medical-events/bulk`;
-            else if (activeTab === 'receipt') endpoint = `/api/pets/${petId}/medical-receipts/bulk`;
-            else if (activeTab === 'checkup') endpoint = `/api/pets/${petId}/health-checkup-results/bulk`;
 
             await axios.delete(endpoint, {
                 data: payload
@@ -172,8 +161,6 @@ export default function PetHistoryPage({ params }: { params: Promise<{ id: strin
             setShowDeleteConfirm(false);
             // 詳細表示中なら閉じる
             setSelectedDiagnosis(null);
-            setSelectedReceipt(null);
-            setSelectedCheckup(null);
             setSelectedVaccine(null);
         } catch (err) {
             console.error(err);
@@ -195,10 +182,8 @@ export default function PetHistoryPage({ params }: { params: Promise<{ id: strin
     };
 
     const handleBack = () => {
-        if (selectedDiagnosis || selectedReceipt || selectedCheckup || selectedVaccine) {
+        if (selectedDiagnosis || selectedVaccine) {
             setSelectedDiagnosis(null);
-            setSelectedReceipt(null);
-            setSelectedCheckup(null);
             setSelectedVaccine(null);
         } else {
             router.push('/dashboard');
@@ -218,11 +203,11 @@ export default function PetHistoryPage({ params }: { params: Promise<{ id: strin
                             <ChevronLeft className="h-6 w-6 text-gray-600" />
                         </button>
                         <h1 className="text-xl font-bold text-gray-900">
-                            {selectedDiagnosis || selectedReceipt || selectedCheckup || selectedVaccine ? '詳細' : `${pet.name} の履歴`}
+                            {selectedDiagnosis || selectedVaccine ? '詳細' : `${pet.name} の履歴`}
                         </h1>
                     </div>
                     <div className="flex items-center gap-3">
-                        {!selectedDiagnosis && !selectedReceipt && !selectedCheckup && !selectedVaccine && (
+                        {!selectedDiagnosis && !selectedVaccine && (
                             <button
                                 onClick={() => setIsEditMode(!isEditMode)}
                                 className={`text-sm font-medium ${isEditMode ? 'text-gray-600' : 'text-indigo-600'} hover:opacity-80 flex items-center`}
@@ -235,7 +220,7 @@ export default function PetHistoryPage({ params }: { params: Promise<{ id: strin
                     </div>
                 </div>
 
-                    {!selectedDiagnosis && !selectedReceipt && !selectedCheckup && !selectedVaccine && (
+                    {!selectedDiagnosis && !selectedVaccine && (
                         <div className="max-w-3xl mx-auto px-4 flex border-b border-gray-100 overflow-x-auto scrollbar-hide">
                             <button
                                 onClick={() => setActiveTab('ai')}
@@ -281,28 +266,6 @@ export default function PetHistoryPage({ params }: { params: Promise<{ id: strin
                                 <CheckSquare className="h-4 w-4" />
                                 ワクチン
                             </button>
-                            <button
-                                onClick={() => setActiveTab('receipt')}
-                                className={`flex-shrink-0 px-4 py-4 text-sm font-bold border-b-2 transition-colors flex items-center justify-center gap-2 ${
-                                    activeTab === 'receipt'
-                                        ? 'border-indigo-600 text-indigo-600'
-                                        : 'border-transparent text-gray-500 hover:text-gray-700'
-                                }`}
-                            >
-                                <Scale className="h-4 w-4" />
-                                診療明細
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('checkup')}
-                                className={`flex-shrink-0 px-4 py-4 text-sm font-bold border-b-2 transition-colors flex items-center justify-center gap-2 ${
-                                    activeTab === 'checkup'
-                                        ? 'border-indigo-600 text-indigo-600'
-                                        : 'border-transparent text-gray-500 hover:text-gray-700'
-                                }`}
-                            >
-                                <Clipboard className="h-4 w-4" />
-                                健康診断
-                            </button>
                         </div>
                     )}
             </div>
@@ -340,133 +303,6 @@ export default function PetHistoryPage({ params }: { params: Promise<{ id: strin
                                         {selectedDiagnosis.result_text}
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-                ) : selectedReceipt ? (
-                    /* 診療明細詳細 */
-                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                            <div className="aspect-video w-full bg-gray-100 flex items-center justify-center overflow-hidden">
-                                <img
-                                    src={`${process.env.NEXT_PUBLIC_BACKEND_URL}/storage/${selectedReceipt.image_path}`}
-                                    alt="診療明細画像"
-                                    className="w-full h-full object-contain"
-                                />
-                            </div>
-                            <div className="p-6 md:p-8">
-                                <div className="flex items-center justify-between mb-6">
-                                    <div>
-                                        <h2 className="text-xl font-bold text-gray-900">{selectedReceipt.clinic_name || '病院名不明'}</h2>
-                                        <div className="flex items-center text-sm text-gray-500 mt-1">
-                                            <Calendar className="h-4 w-4 mr-2" />
-                                            {format(new Date(selectedReceipt.receipt_date), 'yyyy年MM月dd日', { locale: ja })}
-                                        </div>
-                                    </div>
-                                    <div className="text-right">
-                                        <div className="text-2xl font-bold text-indigo-600">
-                                            ¥{Math.floor(selectedReceipt.total_amount ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                                        </div>
-                                        <button
-                                            onClick={() => {
-                                                setSelectedIds([selectedReceipt.id]);
-                                                setShowDeleteConfirm(true);
-                                            }}
-                                            className="text-red-500 hover:text-red-700 p-2 mt-2"
-                                        >
-                                            <Trash2 className="h-5 w-5 ml-auto" />
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {selectedReceipt.items && (
-                                    <div className="border-t pt-6">
-                                        <h3 className="font-bold text-gray-900 mb-4">明細項目</h3>
-                                        <div className="space-y-3">
-                                            {(typeof selectedReceipt.items === 'string' ? JSON.parse(selectedReceipt.items) : selectedReceipt.items).map((item: any, idx: number) => (
-                                                <div key={idx} className="flex justify-between text-sm">
-                                                    <span className="text-gray-700">{item.name}</span>
-                                                    <span className="text-gray-900 font-medium">¥{Math.floor(item.price ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                ) : selectedCheckup ? (
-                    /* 健康診断詳細 */
-                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                            <div className="aspect-video w-full bg-gray-100 flex items-center justify-center overflow-hidden">
-                                <img
-                                    src={`${process.env.NEXT_PUBLIC_BACKEND_URL}/storage/${selectedCheckup.image_path}`}
-                                    alt="健康診断画像"
-                                    className="w-full h-full object-contain"
-                                />
-                            </div>
-                            <div className="p-6 md:p-8">
-                                <div className="flex items-center justify-between mb-6">
-                                    <div>
-                                        <h2 className="text-xl font-bold text-gray-900">{selectedCheckup.clinic_name || '病院名不明'}</h2>
-                                        <div className="flex items-center text-sm text-gray-500 mt-1">
-                                            <Calendar className="h-4 w-4 mr-2" />
-                                            {format(new Date(selectedCheckup.checkup_date), 'yyyy年MM月dd日', { locale: ja })}
-                                        </div>
-                                    </div>
-                                    <button
-                                        onClick={() => {
-                                            setSelectedIds([selectedCheckup.id]);
-                                            setShowDeleteConfirm(true);
-                                        }}
-                                        className="text-red-500 hover:text-red-700 p-2"
-                                    >
-                                        <Trash2 className="h-5 w-5" />
-                                    </button>
-                                </div>
-
-                                {selectedCheckup.results && (
-                                    <div className="border-t pt-6">
-                                        <h3 className="font-bold text-gray-900 mb-4">検査結果</h3>
-                                        <div className="overflow-x-auto">
-                                            <table className="w-full text-sm">
-                                                <thead>
-                                                    <tr className="border-b">
-                                                        <th className="text-left py-2 text-gray-500">項目</th>
-                                                        <th className="text-right py-2 text-gray-500">数値</th>
-                                                        <th className="text-right py-2 text-gray-500">基準値</th>
-                                                        <th className="text-center py-2 text-gray-500">判定</th>
-                                                        <th className="text-center py-2 text-gray-500">範囲外</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {(typeof selectedCheckup.results === 'string' ? JSON.parse(selectedCheckup.results) : selectedCheckup.results).map((item: any, idx: number) => (
-                                                        <tr key={idx} className="border-b last:border-0">
-                                                            <td className="py-3 text-gray-700">{item.item_name || item.item}</td>
-                                                            <td className="py-3 text-right font-bold">{item.value}{item.unit}</td>
-                                                            <td className="py-3 text-right text-gray-500">{item.reference_range}</td>
-                                                            <td className="py-3 text-center">
-                                                                <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-                                                                    item.evaluation === '正常' || item.evaluation === 'A' || item.judgment === '正常'
-                                                                        ? 'bg-green-100 text-green-700'
-                                                                        : 'bg-red-100 text-red-700'
-                                                                }`}>
-                                                                    {item.evaluation || item.judgment}
-                                                                </span>
-                                                            </td>
-                                                            <td className="py-3 text-center">
-                                                                {item.is_out_of_range && (
-                                                                    <span className="text-red-600 font-bold">▲</span>
-                                                                )}
-                                                            </td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                )}
                             </div>
                         </div>
                     </div>

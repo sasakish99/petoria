@@ -52,8 +52,6 @@ import { useState, useEffect } from 'react';
 import HealthLogModal from '@/components/HealthLogModal';
 import ExerciseLogModal from '@/components/ExerciseLogModal';
 import VaccinationCertificateModal from '@/components/VaccinationCertificateModal';
-import MedicalReceiptUploadModal from '@/components/MedicalReceiptUploadModal';
-import HealthCheckupResultUploadModal from '@/components/HealthCheckupResultUploadModal';
 
 const conditions = [
     { value: 1, label: '最悪', icon: Angry, color: 'text-rose-500', bg: 'bg-rose-50', active: 'bg-rose-500 text-white' },
@@ -68,8 +66,6 @@ const Dashboard = () => {
     const [selectedPetForLog, setSelectedPetForLog] = useState<any>(null);
     const [selectedPetForExercise, setSelectedPetForExercise] = useState<any>(null);
     const [selectedPetForCertificate, setSelectedPetForCertificate] = useState<any>(null);
-    const [selectedPetForReceipt, setSelectedPetForReceipt] = useState<any>(null);
-    const [selectedPetForHealthCheckup, setSelectedPetForHealthCheckup] = useState<any>(null);
     const [viewingCertificate, setViewingCertificate] = useState<any>(null);
     const [editingLog, setEditingLog] = useState<any>(null);
     const [editingExerciseLog, setEditingExerciseLog] = useState<any>(null);
@@ -757,7 +753,7 @@ const Dashboard = () => {
                                             </div>
 
                                             {/* AI診断要約 */}
-                                            <div className="bg-white/70 backdrop-blur-lg p-6 rounded-3xl shadow-xl shadow-slate-200/50 border border-white flex flex-col">
+                                            <div className="lg:col-span-2 bg-white/70 backdrop-blur-lg p-6 rounded-3xl shadow-xl shadow-slate-200/50 border border-white flex flex-col">
                                         <h3 className="text-sm font-black mb-4 flex items-center text-slate-800 tracking-tight">
                                             <HeartPulse className="h-4 w-4 mr-2 text-rose-500" />
                                             最新のAI診断
@@ -769,7 +765,7 @@ const Dashboard = () => {
                                                         <Calendar className="h-3 w-3 mr-1.5" />
                                                         {format(new Date(activePet.ai_diagnoses[0].created_at), 'yyyy/MM/dd')}
                                                     </div>
-                                                    <p className="text-[11px] text-slate-700 line-clamp-3 leading-relaxed font-bold flex-1">
+                                                    <p className="text-[11px] text-slate-700 leading-relaxed font-bold flex-1">
                                                         {activePet.ai_diagnoses[0].result_text.replace(/#|【|】/g, '').split('\n').filter((l: string) => l.trim().length > 0).join(' ')}
                                                     </p>
                                                     <Link 
@@ -793,102 +789,6 @@ const Dashboard = () => {
                                         </div>
                                     </div>
 
-                                    <div className="bg-white/70 backdrop-blur-lg p-6 rounded-3xl shadow-xl shadow-slate-200/50 border border-white flex flex-col">
-                                        <div className="flex items-center justify-between mb-4">
-                                            <h3 className="text-sm font-black flex items-center text-slate-800 tracking-tight">
-                                                <Receipt className="h-4 w-4 mr-2 text-indigo-500" />
-                                                最新の診療明細
-                                            </h3>
-                                            <button
-                                                onClick={() => setSelectedPetForReceipt(activePet)}
-                                                className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-black hover:bg-indigo-100 transition-colors border border-indigo-100/50 flex items-center gap-1.5"
-                                            >
-                                                <PlusCircle className="h-3 w-3" />
-                                                明細を取り込む
-                                            </button>
-                                        </div>
-                                        <div className="flex-1 flex flex-col">
-                                            {activePet.medical_receipts && activePet.medical_receipts.length > 0 ? (
-                                                <div className="p-4 bg-indigo-50/50 backdrop-blur-sm rounded-2xl border border-indigo-100/50 flex-1 flex flex-col shadow-sm">
-                                                    <div className="flex items-center justify-between mb-2">
-                                                        <div className="flex items-center text-[10px] font-black text-indigo-400 uppercase tracking-widest">
-                                                            <Calendar className="h-3 w-3 mr-1.5" />
-                                                            {format(parseISO(activePet.medical_receipts[0].receipt_date), 'yyyy/MM/dd')}
-                                                        </div>
-                                                        <div className="text-xs font-black text-indigo-600">
-                                                            ¥{Math.floor(Number(activePet.medical_receipts[0].total_amount) || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                                                        </div>
-                                                    </div>
-                                                    <p className="text-[11px] text-slate-700 font-bold truncate">
-                                                        {activePet.medical_receipts[0].clinic_name || '名称未設定'}
-                                                    </p>
-                                                    <Link 
-                                                        href={`/pets/${activePet.id}/medical-receipts/history`}
-                                                        className="mt-3 text-[10px] font-black text-indigo-600 hover:text-indigo-700 flex items-center justify-end group transition-all"
-                                                    >
-                                                        履歴を表示 <span className="ml-1 group-hover:translate-x-0.5 transition-transform">→</span>
-                                                    </Link>
-                                                </div>
-                                            ) : (
-                                                <div className="flex-1 flex flex-col items-center justify-center py-6 bg-slate-50/50 rounded-2xl border border-slate-100/50">
-                                                    <p className="text-xs text-slate-400 font-medium italic mb-4 tracking-tight">まだ明細記録がありません</p>
-                                                    <button 
-                                                        onClick={() => setSelectedPetForReceipt(activePet)}
-                                                        className="px-4 py-2 text-[11px] bg-white text-indigo-600 rounded-xl font-black transition-all shadow-sm border border-indigo-100 hover:shadow-md hover:-translate-y-0.5"
-                                                    >
-                                                        AIで取り込む
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div className="bg-white/70 backdrop-blur-lg p-6 rounded-3xl shadow-xl shadow-slate-200/50 border border-white flex flex-col">
-                                        <div className="flex items-center justify-between mb-4">
-                                            <h3 className="text-sm font-black flex items-center text-slate-800 tracking-tight">
-                                                <ClipboardList className="h-4 w-4 mr-2 text-emerald-500" />
-                                                最新の健康診断
-                                            </h3>
-                                            <button
-                                                onClick={() => setSelectedPetForHealthCheckup(activePet)}
-                                                className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-lg text-[10px] font-black hover:bg-emerald-100 transition-colors border border-emerald-100/50 flex items-center gap-1.5"
-                                            >
-                                                <PlusCircle className="h-3 w-3" />
-                                                結果を取り込む
-                                            </button>
-                                        </div>
-                                        <div className="flex-1 flex flex-col">
-                                            {activePet.health_checkup_results && activePet.health_checkup_results.length > 0 ? (
-                                                <div className="p-4 bg-emerald-50/50 backdrop-blur-sm rounded-2xl border border-emerald-100/50 flex-1 flex flex-col shadow-sm">
-                                                    <div className="flex items-center justify-between mb-2">
-                                                        <div className="flex items-center text-[10px] font-black text-emerald-400 uppercase tracking-widest">
-                                                            <Calendar className="h-3 w-3 mr-1.5" />
-                                                            {format(parseISO(activePet.health_checkup_results[0].checkup_date), 'yyyy/MM/dd')}
-                                                        </div>
-                                                        <div className="text-[10px] font-black text-emerald-600">
-                                                            {activePet.health_checkup_results[0].results?.length || 0}項目
-                                                        </div>
-                                                    </div>
-                                                    <p className="text-[11px] text-slate-700 font-bold truncate">
-                                                        {activePet.health_checkup_results[0].clinic_name || '名称未設定'}
-                                                    </p>
-                                                    <div className="mt-3 text-[10px] font-black text-emerald-600 flex items-center justify-end">
-                                                        <span>詳細表示は準備中</span>
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <div className="flex-1 flex flex-col items-center justify-center py-6 bg-slate-50/50 rounded-2xl border border-slate-100/50">
-                                                    <p className="text-xs text-slate-400 font-medium italic mb-4 tracking-tight">健康診断の記録がありません</p>
-                                                    <button 
-                                                        onClick={() => setSelectedPetForHealthCheckup(activePet)}
-                                                        className="px-4 py-2 text-[11px] bg-white text-emerald-600 rounded-xl font-black transition-all shadow-sm border border-emerald-100 hover:shadow-md hover:-translate-y-0.5"
-                                                    >
-                                                        AIで取り込む
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
                                 </div>
 
                                 {/* 最近の健康記録 */}
@@ -1271,23 +1171,6 @@ const Dashboard = () => {
                 />
             )}
 
-            {selectedPetForReceipt && (
-                <MedicalReceiptUploadModal
-                    pet={selectedPetForReceipt}
-                    isOpen={!!selectedPetForReceipt}
-                    onClose={() => setSelectedPetForReceipt(null)}
-                    onSuccess={() => mutate()}
-                />
-            )}
-
-            {selectedPetForHealthCheckup && (
-                <HealthCheckupResultUploadModal
-                    pet={selectedPetForHealthCheckup}
-                    isOpen={!!selectedPetForHealthCheckup}
-                    onClose={() => setSelectedPetForHealthCheckup(null)}
-                    onSuccess={() => mutate()}
-                />
-            )}
 
             {/* 証明書表示モーダル */}
             {viewingCertificate && (

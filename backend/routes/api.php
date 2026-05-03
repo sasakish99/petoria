@@ -9,8 +9,6 @@ use App\Http\Controllers\Api\HealthLogController;
 use App\Http\Controllers\Api\ExerciseLogController;
 use App\Http\Controllers\Api\WeightLogController;
 use App\Http\Controllers\Api\MedicalEventController;
-use App\Http\Controllers\Api\MedicalReceiptController;
-use App\Http\Controllers\Api\HealthCheckupResultController;
 use App\Http\Controllers\Api\VaccinationCertificateController;
 use App\Http\Controllers\Api\BreedController;
 
@@ -67,20 +65,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::delete('pets/{pet}/medical-events/{medicalEvent}', [MedicalEventController::class, 'destroy']);
     Route::post('pets/{pet}/vaccination-certificates/analyze', [VaccinationCertificateController::class, 'analyze']);
     Route::post('pets/{pet}/vaccination-certificates', [VaccinationCertificateController::class, 'store']);
-
-    Route::delete('pets/{pet}/medical-receipts/bulk', [MedicalReceiptController::class, 'bulkDestroy']);
-    Route::get('pets/{pet}/medical-receipts', [MedicalReceiptController::class, 'index']);
-    Route::post('pets/{pet}/medical-receipts/upload', [MedicalReceiptController::class, 'uploadAndAnalyze']);
-    Route::get('pets/{pet}/medical-receipts/{medicalReceipt}', [MedicalReceiptController::class, 'show']);
-    Route::put('pets/{pet}/medical-receipts/{medicalReceipt}', [MedicalReceiptController::class, 'update']);
-    Route::delete('pets/{pet}/medical-receipts/{medicalReceipt}', [MedicalReceiptController::class, 'destroy']);
-
-    Route::delete('pets/{pet}/health-checkup-results/bulk', [HealthCheckupResultController::class, 'bulkDestroy']);
-    Route::get('pets/{pet}/health-checkup-results', [HealthCheckupResultController::class, 'index']);
-    Route::post('pets/{pet}/health-checkup-results/upload', [HealthCheckupResultController::class, 'uploadAndAnalyze']);
-    Route::get('pets/{pet}/health-checkup-results/{healthCheckupResult}', [HealthCheckupResultController::class, 'show']);
-    Route::put('pets/{pet}/health-checkup-results/{healthCheckupResult}', [HealthCheckupResultController::class, 'update']);
-    Route::delete('pets/{pet}/health-checkup-results/{healthCheckupResult}', [HealthCheckupResultController::class, 'destroy']);
 });
 
 require __DIR__.'/auth.php';

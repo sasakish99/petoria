@@ -398,37 +398,6 @@ paths:
       responses:
         '204':
           description: 削除成功
-  /pets/{pet}/medical-receipts/upload:
-    parameters:
-      - name: pet
-        in: path
-        required: true
-        schema:
-          type: integer
-    post:
-      summary: 診療明細のアップロードとAI解析
-      tags:
-        - MedicalReceipt
-      security:
-        - sanctum: []
-      requestBody:
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              required:
-                - image
-              properties:
-                image:
-                  type: string
-                  format: binary
-      responses:
-        '200':
-          description: 解析成功
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MedicalReceipt'
   /pets/{pet}/ai-diagnose:
     parameters:
       - name: pet
@@ -518,61 +487,6 @@ components:
         logged_at:
           type: string
           format: date
-    MedicalReceipt:
-      type: object
-      properties:
-        id:
-          type: integer
-        pet_id:
-          type: integer
-        image_path:
-          type: string
-        clinic_name:
-          type: string
-        pet_name:
-          type: string
-        receipt_date:
-          type: string
-          format: date
-        total_amount:
-          type: number
-        items:
-          type: array
-          items:
-            type: object
-    HealthCheckupResult:
-      type: object
-      properties:
-        id:
-          type: integer
-        pet_id:
-          type: integer
-        image_path:
-          type: string
-        clinic_name:
-          type: string
-        pet_name:
-          type: string
-        checkup_date:
-          type: string
-          format: date
-        results:
-          type: array
-          items:
-            type: object
-            properties:
-              item_name:
-                type: string
-              value:
-                type: string
-              unit:
-                type: string
-              reference_range:
-                type: string
-              evaluation:
-                type: string
-              is_out_of_range:
-                type: boolean
     AiDiagnosis:
       type: object
       properties:
