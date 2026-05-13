@@ -44,6 +44,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
     });
 
     Route::get('/dashboard', [DashboardController::class, 'index']);
+    Route::get('/weather', [DashboardController::class, 'weather']);
+    Route::get('/hospitals', [DashboardController::class, 'hospitals']);
 
     Route::get('/breeds', BreedController::class);
     Route::apiResource('pets', PetController::class);

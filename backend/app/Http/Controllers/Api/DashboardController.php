@@ -51,6 +51,30 @@ class DashboardController extends Controller
         ]);
     }
 
+    public function weather(Request $request)
+    {
+        $user = $request->user();
+        $lat = $request->query('lat', $user->latitude);
+        $lon = $request->query('lon', $user->longitude);
+
+        return response()->json([
+            'weather' => $this->getWeather($lat, $lon, $user->id),
+        ]);
+    }
+
+    public function hospitals(Request $request)
+    {
+        $user = $request->user();
+        $lat = $request->query('lat', $user->latitude);
+        $lon = $request->query('lon', $user->longitude);
+
+        return response()->json([
+            'hospitals' => $this->getNearbyHospitals($lat, $lon),
+            'lat' => $lat,
+            'lon' => $lon,
+        ]);
+    }
+
     private function getWeather($lat, $lon, $userId)
     {
         if (!$lat || !$lon) {
