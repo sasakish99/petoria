@@ -1,0 +1,507 @@
+openapi: 3.0.3
+info:
+  title: Petoria API
+  description: うちの子健康管理アプリ Petoria の API 仕様書
+  version: 1.0.0
+servers:
+  - url: /api
+    description: ローカル開発サーバー
+paths:
+  /login:
+    post:
+      summary: ログイン
+      tags:
+        - Auth
+      responses:
+        '204':
+          description: 成功
+  /logout:
+    post:
+      summary: ログアウト
+      tags:
+        - Auth
+      responses:
+        '204':
+          description: 成功
+  /dashboard:
+    get:
+      summary: ダッシュボード情報取得
+      tags:
+        - Dashboard
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pets:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Pet'
+  /pets:
+    get:
+      summary: うちの子一覧取得
+      tags:
+        - Pet
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Pet'
+    post:
+      summary: うちの子登録
+      tags:
+        - Pet
+      security:
+        - sanctum: []
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - name
+                - species
+              properties:
+                name:
+                  type: string
+                species:
+                  type: string
+                gender:
+                  type: string
+                  enum: [male, female, other]
+                breed_id:
+                  type: integer
+                birthday:
+                  type: string
+                  format: date
+                target_weight:
+                  type: number
+                theme_color:
+                  type: string
+                image:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: 作成成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pet'
+  /pets/{pet}:
+    parameters:
+      - name: pet
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      summary: うちの子詳細取得
+      tags:
+        - Pet
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pet'
+    put:
+      summary: うちの子情報更新
+      tags:
+        - Pet
+      security:
+        - sanctum: []
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - name
+                - species
+              properties:
+                name:
+                  type: string
+                species:
+                  type: string
+                gender:
+                  type: string
+                breed_id:
+                  type: integer
+                birthday:
+                  type: string
+                target_weight:
+                  type: number
+                theme_color:
+                  type: string
+                image:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pet'
+    delete:
+      summary: うちの子削除
+      tags:
+        - Pet
+      security:
+        - sanctum: []
+      responses:
+        '204':
+          description: 削除成功
+  /pets/{pet}/health-logs:
+    parameters:
+      - name: pet
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      summary: 健康記録一覧取得
+      tags:
+        - HealthLog
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/HealthLog'
+    post:
+      summary: 健康記録保存
+      tags:
+        - HealthLog
+      security:
+        - sanctum: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - condition
+                - logged_at
+              properties:
+                condition:
+                  type: integer
+                  description: '1:最悪, 2:悪い, 3:普通, 4:良い, 5:最高'
+                weight:
+                  type: number
+                memo:
+                  type: string
+                logged_at:
+                  type: string
+                  format: date
+      responses:
+        '201':
+          description: 作成成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthLog'
+  /pets/{pet}/health-logs/bulk:
+    parameters:
+      - name: pet
+        in: path
+        required: true
+        schema:
+          type: integer
+    delete:
+      summary: 健康記録複数削除
+      tags:
+        - HealthLog
+      security:
+        - sanctum: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - ids
+              properties:
+                ids:
+                  type: array
+                  items:
+                    type: integer
+      responses:
+        '204':
+          description: 削除成功
+  /pets/{pet}/health-logs/{healthLog}:
+    parameters:
+      - name: pet
+        in: path
+        required: true
+        schema:
+          type: integer
+      - name: healthLog
+        in: path
+        required: true
+        schema:
+          type: integer
+    put:
+      summary: 健康記録更新
+      tags:
+        - HealthLog
+      security:
+        - sanctum: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HealthLog'
+      responses:
+        '200':
+          description: 更新成功
+    delete:
+      summary: 健康記録削除
+      tags:
+        - HealthLog
+      security:
+        - sanctum: []
+      responses:
+        '204':
+          description: 削除成功
+  /pets/{pet}/exercise-logs:
+    parameters:
+      - name: pet
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      summary: 運動記録一覧取得
+      tags:
+        - ExerciseLog
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ExerciseLog'
+    post:
+      summary: 運動記録保存
+      tags:
+        - ExerciseLog
+      security:
+        - sanctum: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - duration_minutes
+                - logged_at
+              properties:
+                duration_minutes:
+                  type: integer
+                memo:
+                  type: string
+                logged_at:
+                  type: string
+                  format: date
+      responses:
+        '201':
+          description: 作成成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExerciseLog'
+  /pets/{pet}/exercise-logs/bulk:
+    parameters:
+      - name: pet
+        in: path
+        required: true
+        schema:
+          type: integer
+    delete:
+      summary: 運動記録複数削除
+      tags:
+        - ExerciseLog
+      security:
+        - sanctum: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - ids
+              properties:
+                ids:
+                  type: array
+                  items:
+                    type: integer
+      responses:
+        '204':
+          description: 削除成功
+  /pets/{pet}/exercise-logs/{exerciseLog}:
+    parameters:
+      - name: pet
+        in: path
+        required: true
+        schema:
+          type: integer
+      - name: exerciseLog
+        in: path
+        required: true
+        schema:
+          type: integer
+    put:
+      summary: 運動記録更新
+      tags:
+        - ExerciseLog
+      security:
+        - sanctum: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExerciseLog'
+      responses:
+        '200':
+          description: 更新成功
+    delete:
+      summary: 運動記録削除
+      tags:
+        - ExerciseLog
+      security:
+        - sanctum: []
+      responses:
+        '204':
+          description: 削除成功
+  /pets/{pet}/ai-diagnose:
+    parameters:
+      - name: pet
+        in: path
+        required: true
+        schema:
+          type: integer
+    post:
+      summary: AI画像診断
+      tags:
+        - AIDiagnosis
+      security:
+        - sanctum: []
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - image
+              properties:
+                image:
+                  type: string
+                  format: binary
+                target_part:
+                  type: string
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  diagnosis:
+                    $ref: '#/components/schemas/AiDiagnosis'
+                  nearby_hospitals:
+                    type: array
+                    items:
+                      type: object
+components:
+  schemas:
+    Pet:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        species:
+          type: string
+        gender:
+          type: string
+        birthday:
+          type: string
+          format: date
+        image_url:
+          type: string
+    HealthLog:
+      type: object
+      properties:
+        id:
+          type: integer
+        pet_id:
+          type: integer
+        condition:
+          type: integer
+          description: '1:最悪, 2:悪い, 3:普通, 4:良い, 5:最高'
+        weight:
+          type: number
+        memo:
+          type: string
+        logged_at:
+          type: string
+          format: date
+    ExerciseLog:
+      type: object
+      properties:
+        id:
+          type: integer
+        pet_id:
+          type: integer
+        duration_minutes:
+          type: integer
+        memo:
+          type: string
+        logged_at:
+          type: string
+          format: date
+    AiDiagnosis:
+      type: object
+      properties:
+        id:
+          type: integer
+        pet_id:
+          type: integer
+        image_path:
+          type: string
+        result_text:
+          type: string
+        status:
+          type: string
+  securitySchemes:
+    sanctum:
+      type: apiKey
+      in: cookie
+      name: laravel_session

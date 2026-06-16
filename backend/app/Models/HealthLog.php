@@ -8,8 +8,8 @@ class HealthLog extends Model
 {
     protected $fillable = [
         'pet_id',
-        'meal_amount',
-        'stool_status',
+        'condition',
+        'weight',
         'memo',
         'logged_at',
     ];
