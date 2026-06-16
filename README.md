@@ -2,7 +2,35 @@
 
 大切なうちの子の健康と成長を家族みんなで見守る、うちの子健康管理アプリケーションです。
 
-「Petoria」という名前には、「Pet（ペット）」＋「historia（歴史・記録）」という意味が込められています。大切な家族であるうちの子の一生を記録し、共に歩む歴史を大切にしたいという想いから生まれました。
+「Petoria」という名前には、「 Pet（ペット）」＋「historia（歴史・記録）」という意味が込められています。  
+大切な家族であるうちの子の一生を記録し、共に歩む歴史を大切にしたいという想いから生まれました。
+
+## アプリ画面紹介
+
+### ログイン
+<img alt="login.png" src="images/screenshots/login.png" width="1000"/>
+
+### トップ
+<img alt="top1.png" src="images/screenshots/top1.png" width="1000"/>
+<img alt="top2.png" src="images/screenshots/top2.png" width="1000"/>
+
+### お散歩のお天気
+<img alt="weather.png" src="images/screenshots/weather.png" width="1000"/>
+
+### 近隣の病院
+<img alt="nearby.png" src="images/screenshots/nearby.png" width="1000"/>
+
+### マイページ
+<img alt="mypage.png" src="images/screenshots/mypage.png" width="1000"/>
+
+### AI健康診断
+<img alt="healthcheck1.png" src="images/screenshots/healthcheck1.png" width="1000"/>
+<img alt="healthcheck2.png" src="images/screenshots/healthcheck2.png" width="1000"/>
+<img alt="healthcheck3.png" src="images/screenshots/healthcheck3.png" width="1000"/>
+
+### ペット
+<img alt="pet1.png" src="images/screenshots/pet1.png" width="1000"/>
+<img alt="pet2.png" src="images/screenshots/pet2.png" width="1000"/>
 
 ## 機能概要
 - **ユーザー認証**: Laravel Breeze (API) による会員登録、ログイン機能。
